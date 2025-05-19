@@ -1,0 +1,8 @@
+__pycache__/
+.vscode/
+.idea/
+logs/
+
+benchmark/dataset
+
+.DS_Store
