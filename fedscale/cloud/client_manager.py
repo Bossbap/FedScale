@@ -1,8 +1,7 @@
 import logging
-import math
 import pickle
 from random import Random
-from typing import Dict, List
+from typing import List
 
 from fedscale.cloud.internal.client_metadata import ClientMetadata
 
@@ -22,20 +21,20 @@ class ClientManager:
             from thirdparty.oort.oort import create_training_selector
             self.ucb_sampler = create_training_selector(args=args)
 
+        # if args.sample_mode == "ours":
+
         self.feasibleClients = []
         self.rng = Random()
         self.rng.seed(sample_seed)
         self.count = 0
         self.feasible_samples = 0
-        self.user_trace = None
         self.args = args
 
-        if args.device_avail_file is not None:
-            with open(args.device_avail_file, 'rb') as fin:
-                self.user_trace = pickle.load(fin)
-            self.user_trace_keys = list(self.user_trace.keys())
+        with open(args.clients_file, 'rb') as fin:
+            self.clients = pickle.load(fin)
+        self.clients_keys = list(self.clients.keys())
 
-    def register_client(self, host_id: int, client_id: int, size: int, speed: Dict[str, float],
+    def register_client(self, host_id: int, client_id: int, size: int,
                         duration: float = 1) -> None:
         """Register client information to the client manager.
 
@@ -47,11 +46,22 @@ class ClientManager:
             duration (float): execution latency.
 
         """
-        uniqueId = self.getUniqueId(host_id, client_id)
-        user_trace = None if self.user_trace is None else self.user_trace[self.user_trace_keys[int(
-            client_id) % len(self.user_trace)]]
-
-        self.client_metadata[uniqueId] = ClientMetadata(host_id, client_id, speed, user_trace)
+        cd = self.clients[client_id]
+        # extract everything your modified ClientMetadata __init__ needs:
+        self.client_metadata[client_id] = ClientMetadata(
+            host_id=host_id,
+            client_id=client_id,
+            size=size,
+            cpu_flops=cd['CPU_FLOPS'],
+            gpu_flops=cd['GPU_FLOPS'],
+            timestamps_livelab=cd['timestamps-livelab'],
+            rate=cd['rate'],
+            timestamps_carat=cd['timestamps-carat'],
+            availability=cd['availability'],
+            batteryLevel=cd['batteryLevel'],
+            active=cd['active'],
+            inactive=cd['inactive'],
+        )
 
         # remove clients
         if size >= self.filter_less and size <= self.filter_more:
@@ -64,7 +74,7 @@ class ClientManager:
                              }
                 self.ucb_sampler.register_client(client_id, feedbacks=feedbacks)
         else:
-            del self.client_metadata[uniqueId]
+            del self.client_metadata[client_id]
 
     def getAllClients(self):
         return self.feasibleClients
@@ -73,22 +83,28 @@ class ClientManager:
         return len(self.feasibleClients)
 
     def getClient(self, client_id):
-        return self.client_metadata[self.getUniqueId(0, client_id)]
+        return self.client_metadata[client_id]
 
-    def registerDuration(self, client_id, batch_size, local_steps, upload_size, download_size):
-        if self.mode == "oort" and self.getUniqueId(0, client_id) in self.client_metadata:
-            exe_cost = self.client_metadata[self.getUniqueId(0, client_id)].get_completion_time(
-                batch_size=batch_size, local_steps=local_steps,
-                upload_size=upload_size, download_size=download_size
-            )
-            self.ucb_sampler.update_duration(
-                client_id, exe_cost['computation'] + exe_cost['communication'])
+    def registerDuration(self, client_id, duration):
+        if self.mode == "oort":
+            self.ucb_sampler.update_duration(client_id, duration)
+        # elif self.mode == "ours":
 
-    def get_completion_time(self, client_id, batch_size, local_steps, upload_size, download_size):
-        return self.client_metadata[self.getUniqueId(0, client_id)].get_completion_time(
-            batch_size=batch_size, local_steps=local_steps,
-            upload_size=upload_size, download_size=download_size
+        meta = self.client_metadata.get(client_id)
+        if meta is not None:
+            meta.last_duration = duration
+
+    def get_completion_time(self, client_id, cur_time, batch_size, local_steps, model_size):
+
+        client_completion_time =  self.client_metadata[client_id].get_completion_time(
+            cur_time=cur_time,
+            batch_size=batch_size,
+            local_steps=local_steps,
+            model_size=model_size
         )
+
+        return client_completion_time
+
 
     def registerSpeed(self, host_id, client_id, speed):
         uniqueId = self.getUniqueId(host_id, client_id)
@@ -148,10 +164,6 @@ class ClientManager:
             init_id = max(
                 0, min(int(math.floor(self.rng.random() * lenPossible)), lenPossible - 1))
 
-    def getUniqueId(self, host_id, client_id):
-        return str(client_id)
-        # return (str(host_id) + '_' + str(client_id))
-
     def clientSampler(self, client_id):
         return self.client_metadata[self.getUniqueId(0, client_id)].size
 
@@ -184,12 +196,8 @@ class ClientManager:
 
             return 1. / totalSampleInTraining
 
-    def getFeasibleClients(self, cur_time):
-        if self.user_trace is None:
-            clients_online = self.feasibleClients
-        else:
-            clients_online = [client_id for client_id in self.feasibleClients if self.client_metadata[self.getUniqueId(
-                0, client_id)].is_active(cur_time)]
+    def getOnlineClients(self, cur_time):
+        clients_online = [client_id for client_id in self.feasibleClients if self.client_metadata[client_id].is_active(cur_time)]
 
         logging.info(f"Wall clock time: {round(cur_time)}, {len(clients_online)} clients online, " +
                      f"{len(self.feasibleClients) - len(clients_online)} clients offline")
@@ -197,7 +205,7 @@ class ClientManager:
         return clients_online
 
     def isClientActive(self, client_id, cur_time):
-        return self.client_metadata[self.getUniqueId(0, client_id)].is_active(cur_time)
+        return self.client_metadata[client_id].is_active(cur_time)
 
     def select_participants(self, num_of_clients: int, cur_time: float = 0) -> List[int]:
         """Select participating clients for current execution task.
@@ -212,7 +220,7 @@ class ClientManager:
         """
         self.count += 1
 
-        clients_online = self.getFeasibleClients(cur_time)
+        clients_online = self.getOnlineClients(cur_time)
 
         if len(clients_online) <= num_of_clients:
             return clients_online
@@ -223,10 +231,11 @@ class ClientManager:
         if self.mode == "oort" and self.count > 1:
             pickled_clients = self.ucb_sampler.select_participant(
                 num_of_clients, feasible_clients=clients_online_set)
+        # elif self.mode == "ours":
         else:
             self.rng.shuffle(clients_online)
-            client_len = min(num_of_clients, len(clients_online) - 1)
-            pickled_clients = clients_online[:client_len]
+            client_len = min(num_of_clients, len(clients_online))
+            pickled_clients = clients_online[:client_len]   
 
         return pickled_clients
 

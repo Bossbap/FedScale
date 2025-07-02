@@ -2,14 +2,17 @@
 
 # ========== Cluster configuration ========== 
 # ip address of the parameter server (need 1 GPU process)
-ps_ip: 129.104.253.51
+ps_ip: 129.104.254.52
 
 # ip address of each worker:# of available gpus process on each gpu in this node
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips: 
-    - 129.104.253.51:[1]
-    - 129.104.253.48:[1]
+    - 129.104.253.51:[4]
+    - 129.104.253.46:[4]
+    - 129.104.253.36:[4]
+    - 129.104.252.54:[4]
+    - 129.104.253.44:[4]
 
 exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
 
@@ -24,7 +27,7 @@ auth:
 
 # cmd to run before we can indeed run FAR (in order)
 setup_commands:
-    - source /Data/baptiste.geisenberger/minconda3/bin/activate FedScale    
+    - source /Data/baptiste.geisenberger/miniconda3/bin/activate fedscale
 #    - export NCCL_SOCKET_IFNAME='enp0s31f6'         # Run "ifconfig" to ensure the right NIC for nccl if you have multiple NICs
 
 # ========== Additional job configuration ========== 
@@ -34,17 +37,15 @@ job_conf:
     - job_name: google_speech                   # Generate logs under this folder: log_path/job_name/time_stamp
     - log_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark # Path of log files
     - task: speech
-    - num_participants: 40                      # Number of participants per round, we use K=100 in our paper, large K will be much slower
+    - num_participants: 100                      # Number of participants per round, we use K=100 in our paper, large K will be much slower
     - data_set: google_speech                     # Dataset: openImg, google_speech, stackoverflow
-    - data_dir: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/google_speech    # Path of the dataset
-    - data_map_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/google_speech/client_data_mapping/train.csv              # Allocation of data to each client, turn to iid setting if not provided
-    - device_conf_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/device_info/client_device_capacity     # Path of the client trace
-    - device_avail_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/device_info/client_behave_trace
+    - data_dir: /Data/baptiste.geisenberger/Data/google_speech    # Path of the dataset
+    - data_map_file: /Data/baptiste.geisenberger/Data/google_speech/client_data_mapping/train.csv              # Allocation of data to each client, turn to iid setting if not provided
+    - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
     - model: resnet34                            # Models: e.g., shufflenet_v2_x2_0, mobilenet_v2, resnet34, albert-base-v2
     - gradient_policy: fed-yogi                 # {"fed-yogi", "fed-prox", "fed-avg"}, "fed-avg" by default
     - eval_interval: 30                     # How many rounds to run a testing on the testing set
     - rounds: 5000                          # Number of rounds to run this training. We use 1000 in our paper, while it may converge w/ ~400 rounds
-    - filter_less: 21                       # Remove clients w/ less than 21 samples
     - num_loaders: 4
     - yogi_eta: 3e-3 
     - yogi_tau: 1e-8
@@ -52,5 +53,5 @@ job_conf:
     - learning_rate: 0.05
     - batch_size: 20
     - test_bsz: 20
+    - filter_less: 30
     - use_cuda: True
-    # - experiment_mode: deployment

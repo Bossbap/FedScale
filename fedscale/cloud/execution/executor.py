@@ -5,6 +5,7 @@ import pickle
 import random
 import time
 from argparse import Namespace
+import csv 
 
 import numpy as np
 import torch
@@ -120,13 +121,18 @@ class Executor(object):
         elif self.args.task == "voice":
             self.collate_fn = voice_collate_fn
         # load data partitionxr (entire_train_data)
-        logging.info("Data partitioner starts ...")
+        logging.info(f"Data partitioner starts ...\nNumber of Paricipants = {self.args.num_participants}")
 
         training_sets = DataPartitioner(
             data=train_dataset, args=self.args, numOfClass=self.args.num_class
         )
+        # count how many real clients appear in the CSV so every one
+        # gets its own shard (1-to-1 mapping)
+        with open(self.args.data_map_file) as f:
+            n_real_clients = len({row.split(',')[0] for idx, row in enumerate(f) if idx})
+
         training_sets.partition_data_helper(
-            num_clients=self.args.num_participants,
+            num_clients=n_real_clients,            # purely cosmetic – ignored by trace loader
             data_map_file=self.args.data_map_file,
         )
 
@@ -266,7 +272,18 @@ class Executor(object):
             int: Return the statistics of training dataset, in simulation return the number of clients
 
         """
-        return self.training_sets.getSize()
+        client_dict = self.training_sets.client_dict
+
+        client_ids = []
+        sizes      = []
+        for cid, idx_list in client_dict.items():
+            client_ids.append(int(cid))        # make sure they are ints
+            sizes.append(len(idx_list))
+
+        return {
+            "client_ids": client_ids,
+            "size"      : sizes
+        }
 
     def override_conf(self, config):
         """Override the variable arguments for different client

@@ -33,6 +33,7 @@ parser.add_argument("--use_cuda", type=str, default="True")
 parser.add_argument("--cuda_device", type=str, default=None)
 parser.add_argument("--time_stamp", type=str, default="logs")
 parser.add_argument("--task", type=str, default="cv")
+parser.add_argument("--clients_file", type=str, default=None, help="Path to your pickled clients metadata file")
 parser.add_argument("--device_avail_file", type=str, default=None)
 parser.add_argument(
     "--clock_factor",

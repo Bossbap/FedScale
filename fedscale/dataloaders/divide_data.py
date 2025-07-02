@@ -58,37 +58,41 @@ class DataPartitioner(object):
         return [len(self.client_label_cnt[i]) for i in range(self.getClientLen())]
 
     def trace_partition(self, data_map_file):
-        """Read data mapping from data_map_file. Format: <client_id, sample_name, sample_category, category_id>"""
+        """Read data mapping from data_map_file. Format: <client_id, sample_name, ...>"""
         logging.info(f"Partitioning data by profile {data_map_file}...")
 
-        client_id_maps = {}
-        unique_client_ids = {}
-        # load meta data from the data_map_file
+        client_dict: dict[int, list[int]] = {}
+        sample_id = 0
+
         with open(data_map_file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
-            read_first = True
-            sample_id = 0
+            # skip header
+            header = next(csv_reader)
+            logging.info(f"Trace names are {', '.join(header)}")
 
             for row in csv_reader:
-                if read_first:
-                    logging.info(f'Trace names are {", ".join(row)}')
-                    read_first = False
-                else:
-                    client_id = row[0]
+                client_id = int(row[0]) + 1 # real ID matching your clients.pkl keys
 
-                    if client_id not in unique_client_ids:
-                        unique_client_ids[client_id] = len(unique_client_ids)
+                # append this sample index under that client
+                client_dict.setdefault(client_id, []).append(sample_id)
 
-                    client_id_maps[sample_id] = unique_client_ids[client_id]
-                    self.client_label_cnt[unique_client_ids[client_id]].add(
-                        row[-1])
-                    sample_id += 1
+                # if you track label counts, keep using the real ID
+                self.client_label_cnt[client_id].add(row[-1])
 
-        # Partition data given mapping
-        self.partitions = [[] for _ in range(len(unique_client_ids))]
+                sample_id += 1
 
-        for idx in range(sample_id):
-            self.partitions[client_id_maps[idx]].append(idx)
+        # Expose exactly what executor.report_executor_info_handler expects:
+        #   a dict mapping real_client_id -> list of sample indices
+        self.client_dict = client_dict
+
+        sorted_ids = sorted(client_dict.keys())
+        self.partitions = [ client_dict[cid] for cid in sorted_ids ]
+
+        total_clients = len(sorted_ids)
+        # logging.info(f"[DEBUG] Total clients partitioned: {total_clients}")
+        # for cid in sorted_ids:
+        #     cnt = len(client_dict[cid])
+        #     logging.info(f"[DEBUG] Client {cid}: {cnt} samples")
 
     def partition_data_helper(self, num_clients, data_map_file=None):
 
@@ -125,11 +129,25 @@ class DataPartitioner(object):
     def getSize(self):
         # return the size of samples
         return {'size': [len(partition) for partition in self.partitions]}
+    
+    def get_partition_by_client(self, client_id: int, istest: bool):
+        """Return a torch-Compatible `Partition` object for the given
+        *real* client id."""
+        idx_list = self.client_dict.get(client_id, [])
+        if istest:
+            idx_list = idx_list[: int(len(idx_list) * self.args.test_ratio)]
+        self.rng.shuffle(idx_list)
+        return Partition(self.data, idx_list)
 
 
 def select_dataset(rank, partition, batch_size, args, isTest=False, collate_fn=None):
     """Load data given client Id"""
-    partition = partition.use(rank - 1, isTest)
+    # If the partition was created from a CSV we have one shard per
+    # real-client id; otherwise fall back to the original modulo logic.
+    if hasattr(partition, "client_dict"):
+        partition = partition.get_partition_by_client(rank, isTest)
+    else:
+        partition = partition.use(rank - 1, isTest)
     dropLast = False if isTest else True
     if isTest:
         num_loaders = 0

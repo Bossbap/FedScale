@@ -46,7 +46,7 @@ class TorchClient(ClientBase):
         :return: training results
         """
         client_id = conf.client_id
-        logging.info(f"Start to train (CLIENT: {client_id}) ...")
+        logging.info(f"Start to train (CLIENT: {client_id}), dataset_size={len(client_data.dataset)}")
         tokenizer = conf.tokenizer
 
         model = model.to(device=self.device)
@@ -141,7 +141,30 @@ class TorchClient(ClientBase):
 
     def train_step(self, client_data, conf, model, optimizer, criterion):
 
+        # ---------- DEBUG header ---------------------------------
+        # cid = conf.client_id                      # local alias
+        # logging.info(f"[DEBUG] {cid} entering data loader")
+
+        # logging.info(
+        #     f"[CLIENT {cid}] dataset_size={len(client_data.dataset)}, "
+        #     f"loader_len={len(client_data)}"
+        # )
+
+        # batches_this_epoch = len(client_data)
+        # logging.info(
+        #     f"[CLIENT {cid}] DataLoader len={batches_this_epoch}"
+        # )
+        # if batches_this_epoch == 0:
+        #     logging.warning(f"[CLIENT {cid}] zero-batch loader – skipping")
+        #     raise RuntimeError("empty_dataloader")
+        # ----------------------------------------------------------
+
         for data_pair in client_data:
+            # every 5 local steps, print a heartbeat so we know we’re making progress
+            # if self.completed_steps % 15 == 0:
+            #     logging.info(
+            #         f"[DEBUG] {conf.client_id} step {self.completed_steps}/{conf.local_steps}"
+            #     )
             if conf.task == 'nlp':
                 (data, _) = data_pair
                 data, target = mask_tokens(
