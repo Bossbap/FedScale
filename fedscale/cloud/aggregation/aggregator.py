@@ -85,7 +85,8 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
         self.sampled_executors = []
 
         self.round_stragglers = []
-        self.model_size = 0.0
+        self.model_size = 0
+        self.model_amount_parameters = 0
 
         self.collate_fn = None
         self.round = 0
@@ -118,6 +119,8 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
                     name=f"aggregator{args.this_rank}-{args.time_stamp}",
                     group=f"{args.time_stamp}",
                 )
+                self.wandb.define_metric("Agg/*",   step_metric="round")
+                self.wandb.define_metric("AggWC/*", step_metric="clock")
                 self.wandb.config.update(
                     {
                         "num_participants": args.num_participants,
@@ -211,9 +214,12 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             raise ValueError(f"{self.args.engine} is not a supported engine.")
         self.model_weights = self.model_wrapper.get_weights()
         if self.args.engine == commons.TENSORFLOW:
-            self.model_size = sum(w.size for w in self.model_weights)
+            self.model_amount_parameters = sum(w.size for w in self.model_weights)
+            self.model_size = int(sum(w.size * w.dtype.size for w in self.model_weights) * 8 / 1000000)
         elif self.args.engine == commons.PYTORCH:
-            self.model_size = sum(w.numel() for w in self.model_weights)
+            self.model_amount_parameters = sum(w.numel() for w in self.model_weights)
+            self.model_size = int(sum(w.numel() * w.element_size() for w in self.model_weights) * 8 / 1000000)
+            
 
     def init_task_context(self):
         """Initiate execution context for specific tasks"""
@@ -245,7 +251,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
 
         """
 
-        # sample_mode: random or oort
+        # sample_mode: random, oort or bliss
         client_manager = ClientManager(args.sample_mode, args=args)
 
         return client_manager
@@ -326,12 +332,19 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
                     cur_time=self.global_virtual_clock,
                     batch_size=client_cfg.batch_size,
                     local_steps=client_cfg.local_steps,
-                    model_size=self.model_size
+                    model_size=self.model_size,
+                    model_amount_parameters = self.model_amount_parameters
                 )
 
                 #  NEW the duration back to Oort so it can update its UCB stats ──
                 if self.client_manager.mode == "oort":
                     self.client_manager.registerDuration(
+                        client_to_run,
+                        duration=roundDuration
+                        )
+                    
+                if self.client_manager.mode == "bliss":
+                        self.client_manager.registerDuration(
                         client_to_run,
                         duration=roundDuration
                         )
@@ -443,7 +456,6 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
         self.client_manager.register_feedback(
             results["client_id"],
             results["utility"],
-            auxi=math.sqrt(results["moving_loss"]),
             time_stamp=self.round,
             duration=self.virtual_client_clock[results["client_id"]],
         )
@@ -548,7 +560,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
         """Triggered upon the round completion, it registers the last round execution info,
         broadcast new tasks for executors and select clients for next round.
         """
-        logging.info(f"[DEBUG] *** ROUND {self.round} COMPLETE: got {len(self.stats_util_accumulator)}/"
+        logging.info(f"*** ROUND {self.round} COMPLETE: got {len(self.stats_util_accumulator)}/"
                  f"{self.tasks_round} updates, moving on ***")
         
         self.global_virtual_clock += self.round_duration
@@ -647,27 +659,38 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             )
 
     def log_test_result(self):
-        """Log testing result on TensorBoard and optionally WanDB"""
-        self.log_writer.add_scalar(
-            "Test/round_to_loss",
-            self.testing_history["perf"][self.round]["loss"],
-            self.round,
-        )
-        self.log_writer.add_scalar(
-            "Test/round_to_accuracy",
-            self.testing_history["perf"][self.round]["top_1"],
-            self.round,
-        )
-        self.log_writer.add_scalar(
-            "Test/time_to_test_loss (min)",
-            self.testing_history["perf"][self.round]["loss"],
-            self.global_virtual_clock / 60.0,
-        )
-        self.log_writer.add_scalar(
-            "Test/time_to_test_accuracy (min)",
-            self.testing_history["perf"][self.round]["top_1"],
-            self.global_virtual_clock / 60.0,
-        )
+        # TensorBoard
+        self.log_writer.add_scalar("Test/round_to_loss",
+                                self.testing_history["perf"][self.round]["loss"],
+                                self.round)
+        self.log_writer.add_scalar("Test/round_to_accuracy",
+                                self.testing_history["perf"][self.round]["top_1"],
+                                self.round)
+        self.log_writer.add_scalar("Test/time_to_test_loss (min)",
+                                self.testing_history["perf"][self.round]["loss"],
+                                self.global_virtual_clock / 60.0)
+        self.log_writer.add_scalar("Test/time_to_test_accuracy (min)",
+                                self.testing_history["perf"][self.round]["top_1"],
+                                self.global_virtual_clock / 60.0)
+
+        # W&B
+        if self.wandb is not None:
+            perf = self.testing_history["perf"][self.round]
+
+            # round-based curves
+            self.wandb.log({
+                "Agg/top1": perf["top_1"],
+                "Agg/top5": perf.get("top_5", 0.0),
+                "Agg/loss": perf["loss"],
+            }, step=self.round)
+
+            # wall-clock curves (virtual seconds)
+            self.wandb.log({
+                "clock": perf["clock"],            # x-axis value
+                "AggWC/top1": perf["top_1"],
+                "AggWC/top5": perf.get("top_5", 0.0),
+                "AggWC/loss": perf["loss"],
+            })
 
     def save_model(self):
         """Save model to the wandb server if enabled"""

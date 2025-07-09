@@ -1,0 +1,956 @@
+Key: model
+  Value: Fire HDX 8.9 (2014) - Count: 6
+  Value: Le S3 - Count: 3
+  Value: Yuphoria - Count: 37
+  Value: Iconia Smart - Count: 13
+  Value: TouchPad - Count: 9
+  Value: Fire HD 7 - Count: 3
+  Value: Galaxy Note 10.1 N8000 - Count: 28
+  Value: Galaxy Tab 10.1 P7510 - Count: 4
+  Value: Galaxy Tab 8.9 P7300 - Count: 3
+  Value: P7500 Galaxy Tab 10.1 3G - Count: 2
+  Value: Aquaris E5s - Count: 1
+  Value: I9500 Galaxy S4 - Count: 66
+  Value: I9295 Galaxy S4 Active - Count: 223
+  Value: I9506 Galaxy S4 - Count: 145
+  Value: Galaxy S5 Neo - Count: 108
+  Value: Galaxy Note 3 - Count: 415
+  Value: I9505 Galaxy S4 - Count: 232
+  Value: Galaxy S4 CDMA - Count: 56
+  Value: DROID Mini - Count: 64
+  Value: DROID Ultra - Count: 201
+  Value: Moto X - Count: 192
+  Value: Moto G - Count: 67
+  Value: I9305 Galaxy S III - Count: 1373
+  Value: Galaxy Note II CDMA - Count: 105
+  Value: Galaxy J5 (2016) - Count: 103
+  Value: Galaxy Note II N7100 - Count: 252
+  Value: Galaxy S III I747 - Count: 147
+  Value: Galaxy J7 - Count: 10
+  Value: Hudl 2 - Count: 2
+  Value: VOYAGER2 DG310 - Count: 9
+  Value: 3G7803Q-900 - Count: 5
+  Value: Google Nexus 7 - Count: 804
+  Value: IdeaTab A3000 - Count: 37
+  Value: One - Count: 863
+  Value: G4 - Count: 69
+  Value: Nexus 5 - Count: 408
+  Value: G3 - Count: 48
+  Value: Nexus 6 - Count: 94
+  Value: DROID Turbo - Count: 12
+  Value: Mate 9 - Count: 2
+  Value: One M9 - Count: 24
+  Value: One (M8) dual sim - Count: 25
+  Value: One (M8) - Count: 154
+  Value: One (M8) CDMA - Count: 8
+  Value: Zenfone 2 ZE551ML - Count: 4
+  Value: I9300 Galaxy S III - Count: 259
+  Value: I9190 Galaxy S4 mini - Count: 337
+  Value: Galaxy A3 - Count: 38
+  Value: Galaxy S5 mini - Count: 204
+  Value: I9100 Galaxy S II - Count: 192
+  Value: Galaxy S II I777 - Count: 15
+  Value: Galaxy Xcover 3 - Count: 220
+  Value: Galaxy S II Skyrocket i727 - Count: 99
+  Value: Galaxy Grand I9082 - Count: 10
+  Value: I9105 Galaxy S II Plus - Count: 50
+  Value: Galaxy J5 - Count: 20
+  Value: Galaxy S Duos 3 - Count: 15
+  Value: I9100G Galaxy S II - Count: 1
+  Value: Galaxy Ace 2 I8160 - Count: 20
+  Value: I8190 Galaxy S III mini - Count: 104
+  Value: Tablet S - Count: 30
+  Value: I8200 Galaxy S III mini VE - Count: 15
+  Value: Galaxy Tab S 8.4 - Count: 28
+  Value: Galaxy Tab S2 9.7 - Count: 13
+  Value: Xperia Tablet Z LTE - Count: 27
+  Value: Xperia Z2 Tablet Wi-Fi - Count: 11
+  Value: Galaxy Tab S 8.4 LTE - Count: 7
+  Value: Galaxy Tab Pro 8.4 3G/LTE - Count: 2
+  Value: Xperia Tablet Z Wi-Fi - Count: 2
+  Value: Xperia Z2 Tablet LTE - Count: 1
+  Value: Blackphone 2 - Count: 15
+  Value: UMI X3 - Count: 1
+  Value: H7 - Count: 4
+  Value: TECNO F5 - Count: 6
+  Value: Galaxy K zoom - Count: 29
+  Value: Galaxy S6 - Count: 169
+  Value: Galaxy Note 4 - Count: 348
+  Value: Galaxy Note 4 (USA) - Count: 34
+  Value: Galaxy S6 (USA) - Count: 177
+  Value: Galaxy Note 4 Duos - Count: 19
+  Value: Galaxy S6 edge - Count: 48
+  Value: Nexus 6P - Count: 10
+  Value: Galaxy S5 LTE-A G906S - Count: 323
+  Value: Galaxy S7 - Count: 149
+  Value: Galaxy S5 - Count: 198
+  Value: Pixel - Count: 121
+  Value: Galaxy S5 (USA) - Count: 259
+  Value: 2 - Count: 14
+  Value: Desire 820 - Count: 42
+  Value: Nexus 4 E960 - Count: 197
+  Value: X5 - Count: 14
+  Value: One X - Count: 17
+  Value: Esteem MS910 - Count: 18
+  Value: DROID Incredible 2 - Count: 13
+  Value: Galaxy Note 10.1 (2014 Edition) - Count: 461
+  Value: Galaxy Tab S 10.5 - Count: 101
+  Value: Galaxy Tab S 10.5 LTE - Count: 69
+  Value: Google Nexus 10 P8110 - Count: 38
+  Value: Galaxy Tab Pro 12.2 - Count: 2
+  Value: Galaxy Tab 3 10.1 P5220 - Count: 126
+  Value: Galaxy Tab 4 10.1 (2015) - Count: 133
+  Value: Galaxy Tab 3 7.0 - Count: 30
+  Value: Galaxy Tab 4 7.0 - Count: 17
+  Value: Galaxy Note 8.0 Wi-Fi - Count: 58
+  Value: Galaxy Tab 3 8.0 - Count: 77
+  Value: Galaxy Tab 2 10.1 P5100 - Count: 18
+  Value: Galaxy Tab 2 10.1 P5110 - Count: 3
+  Value: One Touch Pixi - Count: 4
+  Value: Lenny2 - Count: 12
+  Value: MediaPad 7 Vogue - Count: 26
+  Value: G Pad 8.3 LTE - Count: 28
+  Value: Memo Pad FHD10 - Count: 115
+  Value: Shield - Count: 149
+  Value: Yoga Tablet 10 HD+ - Count: 6
+  Value: Yoga Tablet 2 10.1 - Count: 1
+  Value: Ascend Y221 - Count: 28
+  Value: Galaxy Tab 4 10.1 LTE - Count: 14
+  Value: Galaxy S4 mini I9195I - Count: 35
+  Value: Galaxy S6 edge+ - Count: 25
+  Value: Xperia Z1 Compact - Count: 12
+  Value: Galaxy Alpha - Count: 11
+  Value: Moto G (3rd gen) - Count: 117
+  Value: Galaxy Xcover 3 G389F - Count: 12
+  Value: Moto G 4G - Count: 15
+  Value: Xperia Z2 - Count: 17
+  Value: Galaxy Tab 4 10.1 - Count: 43
+  Value: A102 Canvas Doodle 3 - Count: 45
+  Value: Galaxy Grand Prime Plus - Count: 83
+  Value: Galaxy S Duos 2 S7582 - Count: 13
+  Value: G Flex - Count: 19
+  Value: Galaxy S5 Sport - Count: 1
+  Value: Ascend Y520 - Count: 2
+  Value: L90 D405 - Count: 28
+  Value: Desire 526 - Count: 5
+  Value: Galaxy A7 - Count: 35
+  Value: Moto G Dual SIM (2nd gen) - Count: 19
+  Value: Galaxy Ace 3 - Count: 2
+  Value: Xperia Z1 - Count: 13
+  Value: Galaxy Note5 - Count: 12
+  Value: Butterfly S - Count: 4
+  Value: Galaxy Tab 3 10.1 P5210 - Count: 8
+  Value: Blade Vec 4G - Count: 31
+  Value: Priv - Count: 18
+  Value: G2 - Count: 2
+  Value: Honor 3C - Count: 2
+  Value: Valencia2_Y100pro - Count: 1
+  Value: Optimus G E970 - Count: 26
+  Value: Motion 4G MS770 - Count: 7
+  Value: I9000 Galaxy S - Count: 6
+  Value: Xperia go - Count: 1
+  Value: Galaxy Tab 2 7.0 P3100 - Count: 2
+  Value: Rainbow Jam 4G - Count: 4
+  Value: Xperia acro HD SO-03D - Count: 1
+  Value: Galaxy S III CDMA - Count: 2
+  Value: Optimus L9 P769 - Count: 10
+  Value: Zenfone 2 Laser ZE500KL - Count: 1
+  Value: Xperia Z - Count: 12
+  Value: I9070 Galaxy S Advance - Count: 2
+  Value: Thrill 4G P925 - Count: 3
+  Value: Xperia ZL - Count: 3
+  Value: Galaxy Note Edge - Count: 2
+  Value: S7710 Galaxy Xcover 2 - Count: 4
+  Value: Galaxy Tab 3 7.0 WiFi - Count: 7
+  Value: Stylo 3 Plus - Count: 2
+  Value: Galaxy W - Count: 1
+  Value: Galaxy Core Prime - Count: 1
+  Value: Xperia Z3 Compact - Count: 1
+  Value: Jil Sander Mobile - Count: 2
+  Value: XOOM MZ604 - Count: 2
+  Value: Galaxy Nexus I9250 - Count: 1
+  Value: Moto G (2nd gen) - Count: 1
+  Value: Ascend Mate - Count: 1
+  Value: Zenfone 5 A500CG - Count: 1
+  Value: MediaPad 7 Lite - Count: 1
+  Value: One M8 Prime - Count: 1
+  Value: One S - Count: 1
+  Value: I997 Infuse 4G - Count: 1
+  Value: G Pad 8.3 - Count: 2
+  Value: Galaxy Tab 4 8.0 LTE - Count: 2
+
+Key: osVersion
+  Value: 4.2.2 - Count: 329
+  Value: 5.0.2 - Count: 301
+  Value: 5.1.1 - Count: 1445
+  Value: 3.2 - Count: 13
+  Value: 4.4.4 - Count: 1777
+  Value: 4.1.2 - Count: 667
+  Value: 4.4.2 - Count: 1462
+  Value: 4.0.4 - Count: 38
+  Value: 5.0.1 - Count: 663
+  Value: 6.0.1 - Count: 3306
+  Value: 5.0 - Count: 322
+  Value: 8.1.0 - Count: 124
+  Value: 7.1.2 - Count: 26
+  Value: 4.3 - Count: 557
+  Value: 5.1 - Count: 175
+  Value: 7.1.1 - Count: 43
+  Value: 6.0 - Count: 366
+  Value: 7.0 - Count: 790
+  Value: 2.3.3 - Count: 77
+  Value: 4.3.1 - Count: 9
+  Value: 2.3.6 - Count: 29
+  Value: 4.1.1 - Count: 32
+  Value: 2.3.4 - Count: 31
+  Value: 9 - Count: 5
+  Value: 8.0.0 - Count: 27
+  Value: 4.4.3 - Count: 12
+  Value: 2.3.7 - Count: 1
+  Value: 2.2.2 - Count: 3
+  Value: 4.2.1 - Count: 1
+  Value: 4.4 - Count: 9
+  Value: 4.0.3 - Count: 1
+
+Key: brand
+  Value: Amazon - Count: 9
+  Value: LeEco - Count: 3
+  Value: YU - Count: 37
+  Value: Acer - Count: 13
+  Value: HP - Count: 9
+  Value: Samsung - Count: 8132
+  Value: BQ - Count: 1
+  Value: Motorola - Count: 784
+  Value: Tesco - Count: 2
+  Value: Doogee - Count: 10
+  Value: iBall - Count: 5
+  Value: Asus - Count: 925
+  Value: Lenovo - Count: 44
+  Value: HTC - Count: 1157
+  Value: LG - Count: 883
+  Value: Huawei - Count: 72
+  Value: Sony - Count: 131
+  Value: Silent Circle - Count: 15
+  Value: UMI - Count: 1
+  Value: Tecno - Count: 10
+  Value: Google - Count: 121
+  Value: OnePlus - Count: 14
+  Value: alcatel - Count: 4
+  Value: Wiko - Count: 16
+  Value: Nvidia - Count: 149
+  Value: Micromax - Count: 45
+  Value: ZTE - Count: 31
+  Value: BlackBerry - Count: 18
+
+Key: network_technology
+  Value: GSM / HSPA / LTE - Count: 7661
+  Value: GSM / HSPA - Count: 1304
+  Value: No cellular connectivity - Count: 1569
+  Value: GSM / CDMA / HSPA / EVDO / LTE - Count: 1335
+  Value: GSM / CDMA / HSPA / EVDO - Count: 80
+  Value: Wi-Fi only - Count: 2
+  Value: GSM / 3G - Count: 5
+  Value: GSM / CDMA / HSPA / LTE - Count: 630
+  Value: CDMA / EVDO / LTE - Count: 27
+  Value: LTE - Count: 28
+
+Key: network_speed
+  Value: HSPA  LTE - Count: 135
+  Value: HSPA  LTE-A - Count: 4
+  Value: HSPA 42.2/11.5 Mbps  LTE Cat4 150/50 Mbps - Count: 38
+  Value: HSPA 14.4/5.76 Mbps - Count: 148
+  Value: None - Count: 1569
+  Value: HSPA 21.1/5.76 Mbps - Count: 853
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat3 100/50 Mbps - Count: 2063
+  Value: HSPA 42.2/5.76 Mbps  LTE-A Cat4 150/50 Mbps - Count: 343
+  Value: HSPA 42.2/5.76 Mbps  LTE-A Cat6 300/50 Mbps - Count: 611
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat4 150/50 Mbps - Count: 1331
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat3 100/50 Mbps  EV-DO Rev.A 3.1 Mbps - Count: 554
+  Value: HSPA 21.1/5.76 Mbps  LTE  EV-DO Rev.A 3.1 Mbps - Count: 64
+  Value: HSPA 21.1/5.76 Mbps  LTE Cat4 150/50 Mbps - Count: 384
+  Value: HSPA 42.2(LTE)/21.1(3G)/5.76 Mbps  LTE Cat3 100/50 Mbps - Count: 589
+  Value: HSPA 21.1/5.76 Mbps  LTE Cat3 100/50 Mbps - Count: 250
+  Value: HSPA - Count: 80
+  Value: HSPA  LTE Cat3 100/50 Mbps - Count: 863
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat6 300/50 Mbps - Count: 69
+  Value: HSPA 42.2/21.1 Mbps  LTE Cat4 150/50 Mbps - Count: 48
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat4 150/50 Mbps or LTE Cat6 300/50 Mbps - Count: 94
+  Value: HSPA  LTE Cat4 150/50 Mbps - Count: 12
+  Value: HSPA 42.2/5.76 Mbps  LTE-A (3CA) Cat12 600/150 Mbps - Count: 2
+  Value: HSPA 42.2/21.1 Mbps  LTE-A Cat6 300/50 Mbps - Count: 24
+  Value: HSPA 42.2/21.1(AT&T)/5.76 Mbps  LTE Cat4 150/50 Mbps - Count: 155
+  Value: HSPA 14.4/5.76 Mbps  LTE Cat4 150/50 Mbps - Count: 8
+  Value: HSPA 42.2(LTE)/21.1(3G)/5.76 Mbps  LTE Cat4 150/50 Mbps - Count: 665
+  Value: HSPA 21.1/5.76 Mbps  LTE - Count: 114
+  Value: HSPA 42.2/5.76 Mbps (T321)/ LTE Cat4 150/50 Mbps (T325) - Count: 2
+  Value: LTE - Count: 44
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat4 150/50 Mbps (Exynos 5433) - Count: 348
+  Value: HSPA  LTE-A Cat4 150/50 Mbps  EV-DO Rev.A 3.1 Mbps - Count: 34
+  Value: HSPA 42.2/5.76 Mbps  LTE-A Cat6 300/50 Mbps  EV-DO Rev.A 3.1 Mbps - Count: 177
+  Value: HSPA 42.2/5.76 Mbps  LTE-A (2CA) Cat6 300/50 Mbps - Count: 60
+  Value: HSPA 42.2/5.76 Mbps  LTE-A (3CA) Cat9 450/50 Mbps - Count: 167
+  Value: HSPA 42.2/5.76 Mbps  LTE-A (3CA) Cat9 450/50 Mbps or LTE-A (3CA) Cat11 600/75 Mbps - Count: 121
+  Value: EV-DO Rev.A 3.1 Mbps  LTE-A Cat4 150/50 Mbps  HSPA - Count: 259
+  Value: HSPA 42.2/5.76 Mbps - Count: 226
+  Value: EV-DO Rev.A 3.1 Mbps  LTE - Count: 25
+  Value: EV-DO Rev.A 3.1 Mbps  HSPA - Count: 13
+  Value: HSPA 21.1/5.76 Mbps  LTE Cat3 100/50 Mbps (SM-T215) - Count: 30
+  Value: HSPA 7.2/5.76 Mbps - Count: 12
+  Value: HSPA 42.2/5.76 Mbps  LTE-A (2CA) Cat6 300/50 Mbps/ LTE-A (3CA) Cat9 450/50 Mbps - Count: 25
+  Value: HSPA 42.2(14.4 - 3G)/5.76 Mbps  LTE Cat4 150/50 Mbps - Count: 2
+  Value: HSPA 42.2/5.76 Mbps  LTE-A Cat6 300/50 Mbps/ LTE-A (3CA) Cat9 450/50 Mbps - Count: 12
+  Value: HSPA 42.2/5.76 Mbps  LTE - Count: 4
+  Value: HSPA 42.2/5.76 Mbps  LTE Cat4 150/50 Mbps  EV-DO Rev.A 3.1 Mbps - Count: 2
+  Value: LTE Cat3 100/50 Mbps  EV-DO Rev.A 3.1 Mbps - Count: 2
+  Value: HSPA 42.2/5.76 Mbps  LTE-A (3CA) Cat6 300/50 Mbps or Cat4 150/50 Mbps - Count: 2
+  Value: HSPA 3.6/0.384 Mbps - Count: 1
+  Value: HSPA 21.1/3.6 Mbps - Count: 1
+  Value: No - Count: 2
+
+Key: OS
+  Value: Android 4.4 (KitKat - customized) - Count: 9
+  Value: Android 6.0 (Marshmallow) - Count: 112
+  Value: Android 5.0.2 (Lollipop) - YU5010A model - Count: 37
+  Value: Android 2.3 (Gingerbread) - Count: 18
+  Value: HP webOS 3.0 - Count: 9
+  Value: Android 4.0.3 (Ice Cream Sandwich)| upgradable to 4.4.2 (KitKat) - Count: 28
+  Value: Android 3.0 (Honeycomb)| upgradable to 4.0 (Ice Cream Sandwich) - Count: 4
+  Value: Android 3.0 (Honeycomb) - Count: 3
+  Value: Android 3.1 (Honeycomb) - Count: 2
+  Value: Android 5.1.1 (Lollipop) - Count: 1
+  Value: Android 4.2.2 (Jelly Bean)| upgradable to 5.0.1 (Lollipop) - Count: 490
+  Value: Android 5.1.1 (Lollipop)| upgradable to 6.0.1 (Marshmallow) - Count: 126
+  Value: Android 4.3 (Jelly Bean)| upgradable to 4.4.2 (KitKat)| upgradable to 5.0 (Lollipop) - Count: 415
+  Value: Android 4.2.2 (Jelly Bean)| upgradable to 4.4.2 (KitKat)| planned upgrade to 5.0 (Lollipop) - Count: 234
+  Value: Android 4.2 (Jelly Bean)| upgradable to 4.4.4 (KitKat)| planned upgrade to 5.0 (Lollipop) - Count: 64
+  Value: Android 4.2.2 (Jelly Bean)| upgradable to 4.4.4 (KitKat)| planned upgrade to 5.0 (Lollipop) - Count: 201
+  Value: Android 4.2.2 (Jelly Bean)| upgradable to 5.1 (Lollipop) - Count: 192
+  Value: Android 4.3 (Jelly Bean)| upgradable to 5.1.1 (Lollipop) - Count: 528
+  Value: Android 4.1.1 (Jelly Bean)| 4.3 (Jelly Bean)| upgradable to 4.4.4 (KitKat) - Count: 1373
+  Value: Android 4.1 (Jelly Bean)| upgradable to 4.4.2 (KitKat) - Count: 105
+  Value: Android 6.0.1 (Marshmallow) - Count: 103
+  Value: Android 4.1.1 (Jelly Bean)| upgradable to 4.4.2 (KitKat) - Count: 252
+  Value: Android 4.0 (Ice Cream Sandwich)| upgradable to 4.1.1 (Jelly Bean) - Count: 165
+  Value: Android 5.1 (Lollipop)| upgradable to 6.0.1 (Marshmallow) - Count: 44
+  Value: Android 4.4.2 - Count: 2
+  Value: Android 4.4 - Count: 13
+  Value: Android 4.2 - Count: 6
+  Value: Android 4.1.2 (Jelly Bean)| upgradable to 5.1.1 (Lollipop) - Count: 848
+  Value: Android 4.1 (Jelly Bean)| upgradable to 4.2 (Jelly Bean) - Count: 37
+  Value: Android 4.1.2 (Jelly Bean)| upgradable to 5.0 (Lollipop) - Count: 863
+  Value: Android 5.1.1 (Lollipop)| 6.0 (Marshmallow)| planned upgrade to 7.0 (Nougat) - Count: 69
+  Value: Android 5.0 (Lolipop)| upgradable to 6.0 (Marshmallow) - Count: 408
+  Value: Android 4.4.2 (KitKat)| upgradable to 6.0 (Marshmallow) - Count: 530
+  Value: Android 5.0 (Lollipop)| upgradable to 7.1.1 (Nougat) - Count: 94
+  Value: Android 4.4.4 (KitKat)| upgradable to 6.0 (Marshmallow) - Count: 16
+  Value: Android 7.0 (Nougat) - Count: 4
+  Value: Android 5.0 (Lollipop)| upgradable to 7.0 (Nougat) - Count: 24
+  Value: Android 4.4.2 (KitKat)| upgradable to 4.4.4 (KitKat) - Count: 25
+  Value: Android 5.0 (Lollipop)| upgradable to 6.0 (Marshmallow) - Count: 5
+  Value: Android 4.0.4 (Ice Cream Sandwich)| 4.3 (Jelly Bean) - Count: 259
+  Value: Android 4.2.2 (Jelly Bean)| upgradable to 4.4.2 (KitKat) - Count: 341
+  Value: Android 4.4.4 (KitKat)| upgradable to 6.0.1 (Marshmallow) - Count: 439
+  Value: Android 4.4.2 (KitKat)| planned upgrade to 5.1.1 (Lollipop) - Count: 204
+  Value: Android 2.3.4 (Gingerbread)| 4.0.4 (Ice Cream Sandwich)| upgradable to 4.1 (Jelly Bean) - Count: 192
+  Value: Android 2.3.4 (Gingerbread) - Count: 33
+  Value: Android 4.4.4 (KitKat)| planned upgrade to 5.0 (Lollipop) - Count: 220
+  Value: Android 2.3.5 (Gingerbread)| upgradable to 4.1.2 (Jelly Bean) - Count: 99
+  Value: Android 4.1.2 (Jelly Bean)| upgradable to 4.2.2 (Jelly Bean) - Count: 60
+  Value: Android 4.4.2 (KitKat) - Count: 180
+  Value: Android 2.3.4 (Gingerbread)| 4.0.4 (Ice Cream Sandwich)| upgradable to 4.1.2 (Jelly Bean) - Count: 1
+  Value: Android 2.3 (Gingerbread)| upgradable to 4.1.2 (Jelly Bean) - Count: 21
+  Value: Android 4.1 (Jelly Bean) - Count: 130
+  Value: Android 3.1 (Honeycomb)| upgradable to 4.0.3 (Ice Cream Sandwich) - Count: 30
+  Value: Android 4.2.2 (Jelly Bean) - Count: 305
+  Value: Android 5.0.2 (Lollipop)| upgradable to 6.0.1 (Marshmallow) - T810| T815 - Count: 13
+  Value: Android 4.4.2 (KitKat)| 5.0.2 (Lollipop)| planned upgrade to 6.0 (Marshmallow) - Count: 11
+  Value: Android 4.4 (KitKat) - Count: 32
+  Value: Android 4.4.2 (KitKat)| upgradable to 5.1.1 (Lollipop) - Count: 18
+  Value: Silent OS - Count: 15
+  Value: Android 4.2.2 - Count: 6
+  Value: Android 5.0.2 (Lollipop)| upgradable to 7.0 (Nougat) - Count: 217
+  Value: Android 5.0.2 (Lollipop)| upgradable to 5.1 (Lollipop) - Count: 177
+  Value: Android 6.0 (Marshmallow)| upgradable to 7.1.1 (Nougat) - Count: 10
+  Value: Android 4.4.2 (KitKat)| upgradable to 6.0.1 (Marshmallow) - Count: 466
+  Value: Android 6.0 (Marshmallow)| upgradable to 7.0 (Nougat) - Count: 149
+  Value: Android 7.1 (Nougat) - Count: 121
+  Value: Android 4.4.2 (KitKat)| upgradable to 5.0.1 (Lollipop) - Count: 259
+  Value: Android 4.2 (Jelly Bean)| upgradable to 5.1 (Lollipop) - Count: 248
+  Value: Android 2.2 (Froyo)| upgradable to 4.0 (Ice Cream Sandwich) - Count: 13
+  Value: Android 4.4.4 (KitKat)| upgradable to 5.1.1 (Lollipop) - Count: 134
+  Value: Android 4.1.2 (Jelly Bean) - Count: 41
+  Value: Android 4.1.2 (Jelly Bean)| upgradable to 4.4 (KitKat) - Count: 58
+  Value: Android 4.0.3 (Ice Cream Sandwich)| upgradable to 4.1 (Jelly Bean) - Count: 18
+  Value: Android 4.0.3 (Ice Cream Sandwich)| upgradable to 4.2.2 (Jelly Bean) - Count: 3
+  Value: Android 5.1 (Lollipop) - Count: 21
+  Value: Android 4.2.2 (Jelly Bean)| planned upgrade to 5.0 (Lollipop) - Count: 28
+  Value: Android 4.2 (Jelly Bean)| upgradable to 4.3 (Jelly Bean) - Count: 115
+  Value: Android 4.4.2 (KitKat)| upgradable to 7.0 (Nougat) - Count: 149
+  Value: Android 4.3 (Jelly Bean)| upgradable to 4.4 (KitKat) - Count: 6
+  Value: Android 4.4.2 (KitKat)| upgradable to 5.0 (Lollipop) - Count: 1
+  Value: Android 4.4.4 (KitKat) - Count: 35
+  Value: Android 5.1.1 (Lollipop)| upgradable to 7.0 (Nougat) - Count: 37
+  Value: Android 4.3 (Jelly Bean)| upgradable to 5.1 (Lollipop) - Count: 12
+  Value: Android 4.4.4 (KitKat)| upgradable to 5.0.2 (Lollipop) - Count: 46
+  Value: Android 5.1.1 (Lollipop)| upgradable to 6.0 (Marshmallow) - Count: 117
+  Value: Android 4.4.4 (KitKat)| upgradable to Android L - Count: 19
+  Value: Android 4.2 (Jelly Bean) - Count: 2
+  Value: Android 4.2.2 (Jelly Bean)| upgradable to 5.0.2 (Lollipop) - Count: 2
+  Value: Android 5.1 - Count: 1
+  Value: Android 4.0 (Ice Cream Sandwich)| upgradable to 4.1.2 (Jelly Bean) - Count: 26
+  Value: Android 4.0 (Ice Cream Sandwich) - Count: 7
+  Value: Android 2.1 (Eclair)| upgradable to 2.3 (Gingerbread) - Count: 6
+  Value: Android 4.0.3 (Ice Cream Sandwich)| 4.1.1| upgradable to 4.2.2 (Jelly Bean) - Count: 2
+  Value: Android 4.1 (Jelly Bean)| upgrad&#1072;ble to 4.3 (Jelly Bean) - Count: 2
+  Value: Android 4.0.4 (Ice Cream Sandwich) - Count: 11
+  Value: Android 2.3.6 (Gingerbread)| upgradable to 4.1.2 (Jelly Bean) - Count: 2
+  Value: Android 2.2 (Froyo)| upgradable to 2.3 (Gingerbread) - Count: 4
+  Value: Android 4.3 (Jelly Bean) - Count: 1
+  Value: Microsoft Windows Phone 7.5 Mango - Count: 2
+  Value: Android 3.0 (Honeycomb)| upgradable to 4.0.4 (Ice Cream Sandwich) - Count: 2
+  Value: Android OS 4.0 (Ice Cream Sandwich)| upgradable to 4.3 (Jelly Bean) - Count: 1
+  Value: Android 4.1 (Jelly Bean)| upgradable to 4.2.2 (Jelly Bean) - Count: 1
+  Value: Android 4.3 (Jelly Bean)| upgradable to 5.0.2 (Lollipop) - Count: 1
+
+Key: CPU
+  Value: Quad-core 2.5 GHz Krait 450 - Count: 329
+  Value: Octa-core (4x1.4 GHz Cortex-A53 & 4x1.8 GHz Cortex-A72) - Count: 3
+  Value: Quad-core 1.2 GHz Cortex-A53 - Count: 588
+  Value: 1.0 GHz Scorpion - Count: 46
+  Value: Dual-core 1.2 GHz Scorpion - Count: 9
+  Value: Quad-core (2x1.5 GHz & 2x1.2 GHz) - Count: 3
+  Value: Quad-core 1.4 GHz Cortex-A9 - Count: 1660
+  Value: Dual-core 1.0 GHz Cortex-A9 - Count: 72
+  Value: Quad-core 1.4 GHz Cortex-A53 - Count: 201
+  Value: Octa-core (4x1.6 GHz Cortex-A15 & 4x1.2 GHz Cortex-A7) - Count: 66
+  Value: Quad-core 1.9 GHz Krait 300 - Count: 515
+  Value: Quad-core 2.3 GHz Krait 400 - Count: 592
+  Value: Octa-core 1.6 GHz Cortex-A53 - Count: 108
+  Value: Quad-core 2.3 GHz Krait 400 - N9005| N9002 - Count: 415
+  Value: Dual-core 1.7 GHz Krait - Count: 265
+  Value: Dual-core 1.7 GHz Krait 300 - Count: 529
+  Value: Quad-core 1.2 GHz Cortex-A7 - Count: 198
+  Value: Quad-core 1.6 GHz Cortex-A9 - Count: 415
+  Value: Dual-core 1.5 GHz Krait - Count: 150
+  Value: Octa-core (4x1.4 GHz Cortex-A53 & 4x1.0 GHz Cortex-A53) - Count: 10
+  Value: Quad-core 1.83 GHz - Count: 2
+  Value: Quad-core 1.3 GHz - Count: 32
+  Value: Quad-core 1.2 GHz Cortex-A9 - Count: 830
+  Value: Quad-core 1.7 GHz Krait 300 - Count: 865
+  Value: Hexa-core (4x1.4 GHz Cortex-A53 & 2x1.8 GHz Cortex-A57) - Count: 87
+  Value: Quad-core 2.5 GHz Krait 400 - Count: 507
+  Value: Quad-core 2.7 GHz Krait 450 - Count: 161
+  Value: Octa-core (4x2.4 GHz Cortex-A73 & 4x1.8 GHz Cortex-A53) - Count: 2
+  Value: Octa-core (4x1.5 GHz Cortex-A53 & 4x2.0 GHz Cortex-A57) - Count: 24
+  Value: Quad-core 2.3 GHz - Count: 25
+  Value: Quad-core 2.3 GHz (US/EMEA)/ 2.5 GHz (Asia| China) Krait 400 - Count: 154
+  Value: Quad-core 2.3 GHz (4 GB RAM model) - Count: 4
+  Value: Quad-core 1.4 GHz Cortex-A7 - Count: 204
+  Value: Dual-core 1.2 GHz Cortex-A9 - Count: 269
+  Value: Dual-core 1.5 GHz Scorpion - Count: 100
+  Value: Dual-core 1.2 GHz - Count: 50
+  Value: Dual-core 1.2 GHz Cortex-A7 - Count: 15
+  Value: Dual-core 800 MHz - Count: 20
+  Value: 1.0 GHz dual-core Cortex-A9 - Count: 104
+  Value: 1.2 GHz dual-core Cortex-A9 - Count: 15
+  Value: Octa-core (4x1.9 GHz Cortex-A15 & 4x1.3 GHz Cortex-A7) - Count: 131
+  Value: Octa-core (4x1.9 GHz & 4x1.3 GHz) - T810| T815 - Count: 13
+  Value: Quad-core 1.5 GHz Krait - Count: 267
+  Value: Quad-core 2.3 GHz Krait 400 (S800) - Count: 76
+  Value: Octa-core 1.7 GHz - Count: 16
+  Value: Dual-core 1.3 GHz - Count: 6
+  Value: Hexa-core (4x1.3 GHz Cortex A7 & 2x1.7 GHz Cortex A15) - Count: 29
+  Value: Octa-core (4x2.1 GHz Cortex-A57 & 4x1.5 GHz Cortex-A53) - Count: 431
+  Value: Quad-core 2.7 GHz Krait 450 - Snapdragon 805 - Count: 348
+  Value: Octa-core (4x1.55 GHz Cortex-A53 & 4x2.0 GHz Cortex-A57) - Count: 10
+  Value: Octa-core (4x2.3 GHz Mongoose & 4x1.6 GHz Cortex-A53) - Count: 149
+  Value: Quad-core (2x2.15 GHz Kryo & 2x1.6 GHz Kryo) - Count: 121
+  Value: Octa-core (4x1.56 GHz Cortex-A53 & 4x1.82 GHz Cortex-A57) - Count: 14
+  Value: Octa-core (4x1.5 GHz Cortex-A53 & 4x1.0 GHz Cortex-A53) - Count: 42
+  Value: Quad-core 1.5 GHz - Count: 17
+  Value: Quad-core 2.3 GHz Krait 400 - LTE model - Count: 461
+  Value: Dual-core 1.7 GHz Cortex-A15 - Count: 38
+  Value: Dual-core 1.6 GHz - Count: 249
+  Value: Quad-core 1.2 GHz - Count: 77
+  Value: Dual-core 1.5 GHz Cortex-A9 - Count: 77
+  Value: 1.0 GHz - Count: 4
+  Value: Quad-core 1.3 GHz Cortex-A7 - Count: 14
+  Value: Quad-core 1.5 GHz Krait 300 - Count: 28
+  Value: Quad-core 2.2 GHz Cortex-A15 - Count: 149
+  Value: Quad-core 1.6 GHz Cortex-A7 - Count: 6
+  Value: Quad-core 1.86 GHz - Count: 1
+  Value: Dual-core 1.0 GHz Cortex-A7 - Count: 28
+  Value: Quad-core 2.2 GHz Krait 400 - Count: 25
+  Value: Octa-core (4x1.8 GHz Cortex-A15 & 4x1.3 GHz Cortex-A7) - Count: 11
+  Value: Quad-core 1.3 GHz Cortex-A53 - Count: 12
+  Value: Dual-core 1.3 GHz Cortex-A7 - Count: 47
+  Value: Quad-core 2.26 GHz Krait 400 - Count: 21
+  Value: Quad-core 1.1 GHz Cortex-A7 - Count: 9
+  Value: Octa-core (4x1.5 GHz Cortex-A53 & 4x1.0 GHz Cortex-A53) - A700FD - Count: 35
+  Value: Dual-core 1.0 GHz Cortex-A9 (3G) / Dual-core 1.2 GHz Krait (LTE) - Count: 2
+  Value: Quad-core 1.0 GHz - Count: 1
+  Value: Dual-core 1.2 GHz Krait - Count: 7
+  Value: 1.0 GHz Cortex-A8 - Count: 6
+  Value: Dual-core 1.0 GHz - Count: 12
+  Value: Octa-core 1.4 GHz Cortex-A53 - Count: 2
+  Value: Quad-core 1.5 GHz Cortex-A9 - Count: 1
+  Value: Dual-core 2.0 GHz - Count: 1
+  Value: 1.2 GHz Cortex-A8 - Count: 2
+  Value: None - Count: 1
+
+Key: Chipset
+  Value: Qualcomm Snapdragon 805 - Count: 838
+  Value: Qualcomm MSM8976 Snapdragon 652 - Count: 3
+  Value: Qualcomm MSM8916 Snapdragon 410 - Count: 485
+  Value: Qualcomm MSM8255-1 Snapdragon S2 - Count: 13
+  Value: Qualcomm APQ8060 Snapdragon S3 - Count: 9
+  Value: None - Count: 95
+  Value: Exynos 4412 Quad - Count: 2075
+  Value: Nvidia Tegra 2 T20 - Count: 41
+  Value: Qualcomm MSM8916T Snapdragon 412 - Count: 1
+  Value: Exynos 5410 Octa - Count: 66
+  Value: Qualcomm APQ8064T Snapdragon 600 - Count: 1378
+  Value: Qualcomm MSM8974 Snapdragon 800 - Count: 599
+  Value: Exynos 7580 Octa - Count: 108
+  Value: Qualcomm Snapdragon 800 - N9005| N9002 - Count: 415
+  Value: Qualcomm Snapdragon S4 Pro - Count: 64
+  Value: Qualcomm Snapdragon S4Pro - Count: 201
+  Value: Qualcomm MSM8960DT Snapdragon S4 Pro - Count: 192
+  Value: Qualcomm MSM8226 Snapdragon 400 - Count: 115
+  Value: Qualcomm MSM8960 Snapdragon S4 Plus - Count: 149
+  Value: Qualcomm MSM8939 Snapdragon 615 - Count: 52
+  Value: Intel Atom Z3735D - Count: 2
+  Value: MediaTek MT6582 - Count: 13
+  Value: MediaTek MT8389 - Count: 5
+  Value: Nvidia Tegra 3 - Count: 821
+  Value: Mediatek MT8125 - Count: 37
+  Value: Qualcomm MSM8992 Snapdragon 808 - Count: 87
+  Value: Qualcomm MSM8974AC Snapdragon 801 - Count: 506
+  Value: Hisilicon Kirin 960 - Count: 2
+  Value: Qualcomm MSM8994 Snapdragon 810 - Count: 48
+  Value: Qualcomm Snapdragon 801 - Count: 26
+  Value: Qualcomm MSM8974AB Snapdragon 801 - Count: 180
+  Value: Intel Atom Z3580 (4 GB RAM model) - Count: 4
+  Value: Qualcomm MSM8930AB Snapdragon 400 - Count: 337
+  Value: Exynos 3470 Quad - Count: 204
+  Value: Exynos 4210 Dual - Count: 207
+  Value: Marvell Armada PXA1908 - Count: 220
+  Value: Qualcomm MSM8260 Snapdragon S3 - Count: 100
+  Value: Broadcom BC28155 - Count: 50
+  Value: TI OMAP 4430 - Count: 27
+  Value: NovaThor U8500 - Count: 23
+  Value: NovaThor U8420 - Count: 104
+  Value: Exynos 5420 Octa - Count: 131
+  Value: Exynos 5433 - T810| T815 - Count: 13
+  Value: Qualcomm APQ8064 Snapdragon S4 Pro - Count: 265
+  Value: Qualcomm APQ8074AB Snapdragon 801 - Count: 11
+  Value: Qualcomm Snapdragon 800 - Count: 539
+  Value: Qualcomm APQ8064 Snapdragon 600 - Count: 2
+  Value: Snapdragon 615 - Count: 15
+  Value: MediaTek MT6592 - Count: 1
+  Value: MediaTek MT6572 - Count: 6
+  Value: Exynos 5260 Hexa - Count: 29
+  Value: Exynos 7420 Octa - Count: 431
+  Value: Exynos 8890 Octa - Count: 149
+  Value: Qualcomm MSM8996 Snapdragon 821 - Count: 121
+  Value: Qualcomm MSM8655 Snapdragon S2 - Count: 31
+  Value: Exynos 5250 Dual - Count: 38
+  Value: Intel Atom Z2560 - Count: 249
+  Value: Marvell PXA986 - Count: 37
+  Value: Marvell PXA1088 - Count: 17
+  Value: Exynos 4212 Dual - Count: 77
+  Value: Mediatek MT6580M - Count: 12
+  Value: Huawei K3V2 - Count: 27
+  Value: Qualcomm APQ8064 Pro Snapdragon 600 - Count: 30
+  Value: Nvidia Tegra K1 - Count: 149
+  Value: Qualcomm MSM8228 Snapdragon 400 (3G)/ APQ8028 (Wi-Fi only) - Count: 6
+  Value: Intel Atom Z3745 - Count: 1
+  Value: Mediatek MT6572M - Count: 28
+  Value: Exynos 5430 Octa - Count: 11
+  Value: Exynos 3475 Quad - Count: 12
+  Value: Qualcomm MSM8926 Snapdragon 400 - Count: 46
+  Value: Qualcomm Snapdragon 400 - Count: 43
+  Value: Mediatek MT6572 - Count: 47
+  Value: Mediatek MT6737T - Count: 83
+  Value: BCM 28145/28155 - Count: 13
+  Value: Qualcomm MSM8909 Snapdragon 210 - Count: 9
+  Value: Qualcomm MSM8939 Snapdragon 615 - A700FD - Count: 35
+  Value: Broadcom BCM21664 (3G) / Qualcomm MSM8930 Snapdragon 400 (LTE) - Count: 2
+  Value: Mediatek MT6582 - Count: 2
+  Value: MediaTek MT6735 - Count: 1
+  Value: Qualcomm MSM8960L Snapdragon S4 Plus - Count: 7
+  Value: Hummingbird - Count: 6
+  Value: Qualcomm MSM8940 Snapdragon 435 - Count: 2
+  Value: Qualcomm QSD8650 Snapdragon S1 - Count: 2
+  Value: TI OMAP 4460 - Count: 1
+  Value: Intel Atom Z2580 - Count: 1
+  Value: Qualcomm MSM8290 - Count: 1
+
+Key: GPU
+  Value: Adreno 420 - Count: 490
+  Value: Adreno 510 - Count: 3
+  Value: Adreno 306 - Count: 486
+  Value: Adreno 205 - Count: 44
+  Value: Adreno 220 - Count: 109
+  Value: None - Count: 98
+  Value: Mali-400MP4 - Count: 2563
+  Value: ULP GeForce - Count: 862
+  Value: PowerVR SGX544MP3 - Count: 66
+  Value: Adreno 320 - Count: 2132
+  Value: Adreno 330 - Count: 1324
+  Value: Mali-T720MP2 - Count: 192
+  Value: Adreno 330 - N9005| N9002 - Count: 415
+  Value: Adreno 305 - Count: 547
+  Value: Adreno 225 - Count: 157
+  Value: Adreno 405 - Count: 67
+  Value: Intel HD Graphics - Count: 2
+  Value: Mali-400MP2 - Count: 27
+  Value: PowerVR SGX544 - Count: 42
+  Value: Adreno 418 - Count: 87
+  Value: Mali-G71 MP8 - Count: 2
+  Value: Adreno 430 - Count: 48
+  Value: PowerVR G6430 - Count: 4
+  Value: Vivante GC7000 - Count: 220
+  Value: Broadcom VideoCore IV - Count: 73
+  Value: PowerVR SGX540 - Count: 71
+  Value: Mali-400 - Count: 206
+  Value: Mali-T628 MP6 - Count: 142
+  Value: Mali-T760 MP6 - T810| T815 - Count: 13
+  Value: Adreno 330 (S800) - Count: 76
+  Value: Mali-450MP4 - Count: 1
+  Value: Mali-400MP - Count: 6
+  Value: Mali-T624 MP4 - Count: 29
+  Value: Mali-T760MP8 - Count: 431
+  Value: Adreno 420 (Snapdragon 805) - Count: 348
+  Value: Mali-T880 MP12 - Count: 149
+  Value: Adreno 530 - Count: 121
+  Value: Adreno 330 (LTE model) - Count: 461
+  Value: Mali-T604 MP4 - Count: 38
+  Value: PowerVR SGX544MP2 - Count: 250
+  Value: Vivante GC4000 - Count: 27
+  Value: ULP GeForce Kepler (192 cores) - Count: 149
+  Value: Intel Gen 7 (Ivy Bridge) - Count: 1
+  Value: Mali-T720 - Count: 12
+  Value: Adreno 304 - Count: 9
+  Value: Adreno 405 - A700FD - Count: 35
+  Value: Broadcom VideoCore IV (3G) / Adreno 305 (LTE) - Count: 2
+  Value: Adreno 505 - Count: 2
+  Value: Adreno 200 - Count: 2
+
+Key: internal_memory
+  Value: 16/32/64 GB - Count: 1926
+  Value: 32 GB - Count: 551
+  Value: 16 GB - Count: 3574
+  Value: 8 GB - Count: 1069
+  Value: 16/32 GB - Count: 2146
+  Value: 8/16 GB - Count: 488
+  Value: 16 GB (11.2 GB user available) - Count: 223
+  Value: 8/16/32 GB - Count: 810
+  Value: 32/64 GB - Count: 1160
+  Value: 64 GB - Count: 2
+  Value: 4 GB - Count: 110
+  Value: 32/64/128 GB - Count: 416
+  Value: 32/128 GB - Count: 121
+  Value: 16/32 GB (26 GB user available) - Count: 17
+  Value: 1.1 GB - Count: 13
+  Value: 512 MB - Count: 4
+  Value: 4 GB (3G) / 8 GB (LTE) - Count: 2
+  Value: 8 GB (5 GB user available) - Count: 7
+  Value: 8 GB (4 GB user available) - Count: 1
+  Value: 11 GB - Count: 1
+
+Key: RAM
+  Value: 2 GB RAM - Count: 6112
+  Value: 3 GB RAM - Count: 2490
+  Value: 512 MB RAM - Count: 86
+  Value: 1 GB RAM - Count: 2231
+  Value: 1.5 GB RAM - Count: 1213
+  Value: 2 GB - Count: 4
+  Value: 1 GB - Count: 24
+  Value: 2 GB RAM/ 32 GB| 3 GB RAM - Count: 48
+  Value: 4 GB RAM - Count: 309
+  Value: 2/4 GB RAM - Count: 4
+  Value: 1 GB or 1.5 GB RAM - Count: 38
+  Value: 768 MB RAM - Count: 60
+  Value: 3 GB - Count: 15
+  Value: 256 MB RAM - Count: 4
+  Value: None - Count: 3
+
+Key: WLAN
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band - Count: 6
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band| hotspot - Count: 3
+  Value: Wi-Fi 802.11 b/g/n| hotspot - Count: 404
+  Value: Wi-Fi 802.11 b/g/n| UPnP| DLNA| hotspot - Count: 13
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band - Count: 273
+  Value: Wi-Fi 802.11 b/g/n - Count: 839
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| Wi-Fi Direct| hotspot - Count: 682
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| hotspot - Count: 6
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band| Wi-Fi Direct| DLNA| hotspot - Count: 2190
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band| Wi-Fi Direct| hotspot - Count: 2566
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band| hotspot| DLNA - Count: 265
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band| DLNA| hotspot - Count: 192
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| Wi-Fi Direct| DLNA| hotspot - Count: 2746
+  Value: Wi-Fi 802.11 b/g/n| Wi-Fi Direct| hotspot - Count: 512
+  Value: Wi-Fi 802.11 a/b/g/n - Count: 2
+  Value: Wi-Fi 802.11 a/b/g/n/ac| Wi-Fi Direct| DLNA| hotspot - Count: 878
+  Value: Wi-Fi 802.11 a/b/g/n/ac| dual-band| DLNA| WiFi Direct| hotspot - Count: 2
+  Value: Wi-Fi 802.11 a/b/g/n/ac| Wi-Fi Direct| hotspot - Count: 22
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| WiFi Direct| DLNA| hotspot - Count: 364
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| hotspot| DLNA - Count: 10
+  Value: Wi-Fi 802.11 a/b/g/n| dual band| Wi-Fi Direct| DLNA| hotspot - Count: 50
+  Value: Wi-Fi 802.11 b/g/n| Wi-Fi Direct| DLNA| hotspot - Count: 65
+  Value: Wi-Fi 802.11 b/g/n| DLNA - Count: 32
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| DLNA| hotspot - Count: 202
+  Value: Wi-Fi 802.11 a/b/g/n/ac - Count: 15
+  Value: Wi-Fi 802.11 b/g/n| WiFi Direct| hotspot - Count: 16
+  Value: Wi-Fi 802.11 a/b/g/n| Wi-Fi Direct| DLNA| hotspot - Count: 17
+  Value: Wi-Fi 802.11 b/g/n| DLNA| hotspot - Count: 45
+  Value: Wi-Fi 802.11 b/g/n| Wi-Fi Direct| DLNA - Count: 38
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| Wi-Fi Direct| DLNA - Count: 58
+  Value: Wi-Fi 802.11 b/g/n| hotspot| DLNA - Count: 27
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| hotspot| Wi-Fi Direct| DLNA - Count: 30
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| WiFi Direct| hotspot - Count: 47
+  Value: Wi-Fi 802.11 b/g/n| DLNA| hotspot (Android 2.2) - Count: 6
+  Value: Wi-Fi 802.11 a/b/g/n| dual-band| Wi-Fi Direct| hotspot| DLNA - Count: 10
+  Value: Wi-Fi 802.11 b/g/n| DLNA| hotspot (charges may apply) - Count: 3
+  Value: Wi-Fi 802.11 b/g/n| Wi-Fi Direct| hotspot| DLNA - Count: 4
+  Value: Wi-Fi 802.11 b/g/n; DLNA - Count: 1
+
+Key: battery
+  Value: Non-removable Li-Ion battery - Count: 41
+  Value: Non-removable Li-Ion 3000 mAh battery - Count: 190
+  Value: Removable Li-Ion 2230 mAh battery - Count: 37
+  Value: Removable Li-Po 1500 mAh battery - Count: 13
+  Value: Non-removable Li-Ion 6300 mAh battery - Count: 9
+  Value: Non-removable Li-Ion 7000 mAh battery - Count: 28
+  Value: Non-removable Li-Po 7000 mAh battery - Count: 27
+  Value: Non-removable Li-Po 6000 mAh battery - Count: 44
+  Value: Li-Po 2850 mAh battery - Count: 1
+  Value: Removable Li-Ion 2600 mAh battery - Count: 825
+  Value: Removable Li-Ion 2800 mAh battery - Count: 903
+  Value: Removable Li-Ion 3200 mAh battery - Count: 416
+  Value: Non-removable Li-Ion 2000 mAh battery - Count: 64
+  Value: Non-removable Li-Ion 2130 mAh battery - Count: 201
+  Value: Non-removable Li-Ion 2200 mAh battery - Count: 192
+  Value: Non-removable Li-Ion 2070 mAh battery - Count: 102
+  Value: Removable Li-Ion 2100 mAh battery - Count: 1995
+  Value: Removable Li-Ion 3100 mAh battery - Count: 460
+  Value: Removable Li-Ion 3000 mAh battery - Count: 148
+  Value: 5700 mAh - Count: 2
+  Value: 2000 mAh - Count: 9
+  Value: 4000 mAh - Count: 5
+  Value: Non-removable Li-Ion 4325 mAh battery (16 Wh) - Count: 804
+  Value: Non-removable Li-Po 3500 mAh battery - Count: 56
+  Value: Non-removable Li-Po 2300 mAh battery - Count: 1271
+  Value: Non-removable Li-Po 3220 mAh battery - Count: 94
+  Value: Non-removable Li-Po 3900 mAh battery - Count: 12
+  Value: Non-removable Li-Po 4000 mAh battery - Count: 19
+  Value: Non-removable Li-Po 2840 mAh battery - Count: 24
+  Value: Non-removable Li-Po 2600 mAh battery - Count: 221
+  Value: Non-removable Li-Ion 2600 mAh battery - Count: 92
+  Value: Non-removable Li-Po 3000 mAh battery - Count: 18
+  Value: Removable Li-Ion 1900 mAh battery - Count: 372
+  Value: Non-removable Li-Ion 1900 mAh battery - Count: 38
+  Value: Removable Li-Ion 1650 mAh battery - Count: 258
+  Value: Removable Li-Ion 2200 mAh battery - Count: 232
+  Value: Removable Li-Ion 1850 mAh battery - Count: 99
+  Value: Removable Li-Ion 1500 mAh battery - Count: 198
+  Value: Non-removable Li-Ion 4900 mAh battery - Count: 35
+  Value: Non-removable Li-Ion 5870 mAh battery - Count: 13
+  Value: Non-removable Li-Ion 4800 mAh battery - Count: 2
+  Value: 3060 mAh - Count: 15
+  Value: 3150 mAh - Count: 1
+  Value: 2100 mAh - Count: 4
+  Value: 1800 mAh - Count: 6
+  Value: Removable Li-Ion 2430 mAh battery - Count: 29
+  Value: Non-removable Li-Ion 2550 mAh battery - Count: 346
+  Value: Removable Li-Ion 3220 mAh battery - Count: 382
+  Value: Non-removable Li-Po 3450 mAh battery - Count: 10
+  Value: Non-removable Li-Ion 2770 mAh battery - Count: 121
+  Value: Non-removable Li-Po 3300 mAh battery - Count: 14
+  Value: Non-removable Li-Po 2100 mAh battery - Count: 223
+  Value: Non-removable Li-Po 1800 mAh battery - Count: 17
+  Value: Removable Li-Ion 1450 mAh battery - Count: 13
+  Value: Non-removable Li-Po 8220 mAh battery - Count: 461
+  Value: Non-removable Li-Ion 7900 mAh battery - Count: 170
+  Value: Non-removable Li-Po 9000 mAh battery - Count: 38
+  Value: Non-removable Li-Po 9500 mAh battery - Count: 2
+  Value: Non-removable Li-Po 6800 mAh battery - Count: 324
+  Value: Non-removable Li-Ion 4000 mAh battery - Count: 39
+  Value: Non-removable Li-Ion 4600 mAh battery - Count: 58
+  Value: Non-removable Li-Ion 4450 mAh battery - Count: 77
+  Value: Removable Li-Ion 1300 mAh battery - Count: 4
+  Value: Removable Li-Po 1800 mAh battery - Count: 12
+  Value: Non-removable Li-Po 4100 mAh battery - Count: 27
+  Value: Non-removable Li-Po 4600 mAh battery - Count: 30
+  Value: Non-removable Li-Ion 6760 mAh battery (25 Wh) - Count: 115
+  Value: Non-removable Li-Ion battery (19.75 Wh) - Count: 149
+  Value: Non-removable Li-Ion 9000 mAh battery - Count: 6
+  Value: Non-removable Li-Ion 9600 mAh battery - Count: 1
+  Value: Removable Li-Ion 1350 mAh battery - Count: 28
+  Value: Non-removable Li-Ion 2300 mAh battery - Count: 43
+  Value: Removable Li-Ion 1860 mAh battery - Count: 11
+  Value: Non-removable Li-Ion 2470 mAh battery - Count: 117
+  Value: Non-removable Li-Ion 3200 mAh battery - Count: 17
+  Value: Removable Li-Ion 2500 mAh battery - Count: 45
+  Value: Removable Li-Ion 1750 mAh battery - Count: 4
+  Value: Removable Li-Ion 2540 mAh battery - Count: 28
+  Value: Removable Li-Ion 2000 mAh battery - Count: 6
+  Value: Removable Li-Ion 1500 (3G) / 1800 (LTE) mAh battery - Count: 2
+  Value: Non-removable Li-Po 3200 mAh battery - Count: 4
+  Value: Non-removable Li-Ion 3410 mAh battery - Count: 18
+  Value: Removable Li-Po 2300 mAh battery - Count: 2
+  Value: 2200 mAh - Count: 1
+  Value: Removable Li-Ion 1700 mAh battery - Count: 11
+  Value: Non-removable Li-Ion 1305 mAh battery - Count: 1
+  Value: Li-Po 2500 mAh battery - Count: 4
+  Value: Removable Li-Ion 1910 mAh battery - Count: 1
+  Value: Removable Li-Ion 2150 mAh battery - Count: 10
+  Value: Removable Li-Po 2400 mAh battery - Count: 1
+  Value: Non-removable Li-Ion 2330 mAh battery - Count: 12
+  Value: Non-removable Li-Ion 2370 mAh  battery - Count: 3
+  Value: Li-Ion 3080 mAh battery - Count: 2
+  Value: Non-removable Li-Ion 4050 mAh battery - Count: 1
+  Value: Non-removable Li-Po 2110 mAh battery - Count: 1
+  Value: Non-removable Li-Po battery - Count: 1
+  Value: Non-removable Li-Po 1650 mAh battery - Count: 1
+  Value: Non-removable Li-Po 4450 mAh battery - Count: 2
+
+Key: uid
+  Value: B03 - Count: 71
+  Value: A06 - Count: 65
+  Value: B07 - Count: 41
+  Value: D00 - Count: 4
+  Value: A04 - Count: 74
+  Value: A02 - Count: 13
+  Value: A08 - Count: 98
+  Value: D06 - Count: 4
+  Value: A05 - Count: 89
+  Value: B02 - Count: 59
+  Value: B10 - Count: 14
+  Value: B05 - Count: 73
+  Value: B08 - Count: 64
+  Value: A00 - Count: 62
+  Value: A03 - Count: 81
+  Value: A11 - Count: 15
+  Value: D02 - Count: 4
+  Value: B04 - Count: 27
+  Value: A07 - Count: 93
+  Value: D03 - Count: 5
+  Value: AH - Count: 20
+  Value: A10 - Count: 71
+  Value: B11 - Count: 25
+  Value: B06 - Count: 47
+  Value: D07 - Count: 33
+  Value: A12 - Count: 6
+  Value: B09 - Count: 64
+
+Key: rate
+  Value: 54 - Count: 6575571
+  Value: 24 - Count: 2637082
+  Value: 5 - Count: 559727
+  Value: 48 - Count: 2914964
+  Value: 36 - Count: 4466471
+  Value: 18 - Count: 1786455
+  Value: 11 - Count: 4613200
+  Value: 1 - Count: 533126
+  Value: 2 - Count: 236050
+
+Key: CPU_FLOPS
+  Value: 40000000000 - Count: 913
+  Value: 51200000000 - Count: 255
+  Value: 19200000000 - Count: 1693
+  Value: 4000000000 - Count: 160
+  Value: 9600000000 - Count: 350
+  Value: 21600000000 - Count: 3
+  Value: 22400000000 - Count: 2065
+  Value: 8000000000 - Count: 114
+  Value: 44800000000 - Count: 68
+  Value: 30400000000 - Count: 515
+  Value: 36800000000 - Count: 1814
+  Value: 13600000000 - Count: 832
+  Value: 25600000000 - Count: 421
+  Value: 12000000000 - Count: 327
+  Value: 38400000000 - Count: 10
+  Value: 29280000000 - Count: 2
+  Value: 20800000000 - Count: 58
+  Value: 27200000000 - Count: 865
+  Value: 43200000000 - Count: 509
+  Value: 67200000000 - Count: 2
+  Value: 56000000000 - Count: 24
+  Value: 6400000000 - Count: 20
+  Value: 4800000000 - Count: 17
+  Value: 24000000000 - Count: 313
+  Value: 54400000000 - Count: 16
+  Value: 10400000000 - Count: 53
+  Value: 34400000000 - Count: 29
+  Value: 57600000000 - Count: 431
+  Value: 56800000000 - Count: 10
+  Value: 62400000000 - Count: 149
+  Value: 30000000000 - Count: 121
+  Value: 54080000000 - Count: 14
+  Value: 12800000000 - Count: 249
+  Value: 35200000000 - Count: 174
+  Value: 29760000000 - Count: 1
+  Value: 49600000000 - Count: 11
+  Value: 36160000000 - Count: 21
+  Value: 17600000000 - Count: 9
+  Value: 16000000000 - Count: 2
+  Value: 5000000010 - Count: 1
+
+Key: GPU_FLOPS
+  Value: 3375000000 - Count: 838
+  Value: 180000000000 - Count: 3
+  Value: 216000000 - Count: 486
+  Value: 245000000 - Count: 44
+  Value: 266000000 - Count: 109
+  Value: 0 - Count: 98
+  Value: 5400000000 - Count: 2596
+  Value: 4800000000 - Count: 933
+  Value: 28800000000 - Count: 66
+  Value: 2531000000 - Count: 2132
+  Value: 3251000000 - Count: 2276
+  Value: 2400000000 - Count: 192
+  Value: 540000000 - Count: 547
+  Value: 400000000 - Count: 157
+  Value: 1056000000 - Count: 102
+  Value: 50000000000 - Count: 2
+  Value: 9600000000 - Count: 42
+  Value: 6000000000 - Count: 87
+  Value: 250000000000 - Count: 2
+  Value: 5000000000 - Count: 48
+  Value: 163780000000 - Count: 4
+  Value: 128000000000 - Count: 220
+  Value: 24000000000 - Count: 73
+  Value: 1200000000 - Count: 218
+  Value: 115200000000 - Count: 142
+  Value: 268800000000 - Count: 13
+  Value: 11000000000 - Count: 1
+  Value: 38400000000 - Count: 67
+  Value: 358400000000 - Count: 431
+  Value: 270000000000 - Count: 149
+  Value: 480000000 - Count: 121
+  Value: 19200000000 - Count: 250
+  Value: 45000000000 - Count: 27
+  Value: 360000000000 - Count: 149
+  Value: 100800000000 - Count: 1
+  Value: 192000000 - Count: 9
+  Value: 25000000000 - Count: 2
+  Value: 48000000000 - Count: 2
+  Value: 133000000 - Count: 2
+
+Key: peak_throughput
+  Value: 433 - Count: 6139
+  Value: 72 - Count: 2074
+  Value: 150 - Count: 4428
+
+Ranges for skipped array keys:
+  Key: batteryLevel - Range: [-1, 99]
+  Key: timestamps-carat - Range: [0, 172800]
+  Key: rssi - Range: [-105, -5]
+  Key: timestamps-livelab - Range: [0, 172800]
+  Key: active - Range: [0, 172781]
+  Key: inactive - Range: [0, 172800]
+  Key: availability - Range: [35, 100]
+
+✅ ID values correctly span from 1 to 12641.

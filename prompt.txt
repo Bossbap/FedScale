@@ -1,0 +1,1683 @@
+I now want you to follow review the code. I want you to follow everything rigorously, to see if it makes sense. 
+
+I'm now going to give you general context on how FedScale works on a high level so that you are aware as to which call does what.
+
+Here is the basic workflow of a FL job through FedScale:
+
+To run a FL job, you run python docker/driver.py submit benchmark/configs/speech/google_speech.yml from the root repo of FedScale. In driver.py, process_cmd(“google_speech.yml”): loads the config, extract the hardware arguments (ps_ip, worker_ips, and GPU counts), to build executor_configs string. It then launches all of the executors, i.e. processes on distributed machines that will emulate the behavious of clients in the FL job. It also extracts the arguments from google_speech.yml, which is the configuration for the job (in this instance for an audio recognition job). In this file, we have all of the hyperparameters of the FL job as well as the hardware information, i.e. the IP addresses of remote machines that we will execute code on.
+It then launches aggregator.py. this script is the central server of our FL job. It creates queues for communicating to the workers (executor): one global queue for the rounds, one client-specific callback queue - event_monitor(). It also holds the main loop that tracks simulated wall-clock time, selects participants with ClientManager.select_participants(num, cur_time), gets the completion times of these clients in a certain round with ClientManager.get_completion_time(client_id, batch_size, local_steps, upload_size, download_size), and manages the tests…
+Exectutor on the other hand “mostly” emulates the work done by the clients. Based on the instruction it receives from the central server, it will execute initialization, training, or testing.
+
+client_manager.py defines a ClientManager class that as said in the name, manages the clients – from the loading to the sampling to simulating the time taken by a selected client in a round
+client_metadata.py defines a ClientMetadata class – each client will be represented by an object of this class.
+
+Aggregator.py uses a ClientManager object, that uses ClientMetadata objects. This is where the Oort sampling is handled.
+
+torch_client.py actually does the training of a client. 
+
+Ok now, let's go more in depth with the client selection pipeline, that I tried to modify with bliss. We'll first go more in depth as to how the aggregator calls the client_manager object that he creates, and then from there I will give you the full scripts of client_manager.py, client_metadata.py, bliss.py and encode.py.
+
+Here's aggregator's calls to client_manager:
+
+Client initialization occurs once per executor registration, typically at the beginning of the FL job:
+
+def init_client_manager(self, args):
+    # sample_mode: random, oort or bliss
+    client_manager = ClientManager(args.sample_mode, args=args)
+
+    return client_manager
+
+
+    self.client_manager = self.init_client_manager(args=args)
+
+
+It then initalizes all the clients in the client_manager's mempory:
+
+Aggregator.executor_info_handler(...)
+→ calls → Aggregator.client_register_handler(...)
+→ calls → 
+    self.client_manager.register_client(
+        host_id=executorId,
+        client_id=real_id,
+        size=_size
+    )
+
+logging.info(
+    "Info of all feasible clients {}".format(
+        self.client_manager.getDataInfo()
+    )
+
+This is where:
+
+Each client gets a ClientMetadata object.
+
+Client metadata (dynamic traces, hardware, etc.) are loaded from your preprocessed dataset (args.clients_file).
+
+Clients are filtered using filter_less and filter_more, and if accepted, are registered in ClientManager.feasibleClients.
+
+Then, the process starts.
+
+Client selection happens once per round, in:
+
+Aggregator.select_participants(...)
+→ calls →
+    self.client_manager.select_participants(
+        int(select_num_participants * overcommitment),
+        cur_time=self.global_virtual_clock,
+    )
+
+Once participants are selected, their simulated training durations are computed using:
+Aggregator.tictak_client_tasks(...)
+
+→ calls →
+    roundDuration = self.client_manager.get_completion_time(
+        client_to_run,
+        cur_time=self.global_virtual_clock,
+        batch_size=client_cfg.batch_size,
+        local_steps=client_cfg.local_steps,
+        model_size=self.model_size,
+        model_amount_parameters = self.model_amount_parameters
+    )
+
+    if self.client_manager.isClientActive(
+        client_to_run, roundDuration + self.global_virtual_clock
+    ):
+
+These durations are then:
+
+Passed to ClientManager.registerDuration(...) to update internal stats (e.g. for Oort/Bliss).
+
+    if self.client_manager.mode == "bliss":
+            self.client_manager.registerDuration(
+            client_to_run,
+            duration=roundDuration
+            )
+
+After clients train (emulated by executors), they report back:
+
+Aggregator.event_monitor(...)
+→ calls → Aggregator.client_completion_handler(...)
+→ calls →
+
+    self.client_manager.register_feedback(
+        results["client_id"],
+        results["utility"],
+        time_stamp=self.round,
+        duration=self.virtual_client_clock[results["client_id"]],
+    )
+
+    for client_id in self.round_stragglers:
+        self.client_manager.register_feedback(
+            client_id,
+            last_round_avg_util,
+            time_stamp=self.round,
+            duration=self.virtual_client_clock[client_id],
+            success=False,
+        )
+
+Finally, after receiving tasks_round successful results, this process starts over again.
+
+I will now give you the full scripts of client_manager.py, client_metadata.py, bliss.py and encode.py.
+
+
+
+
+
+client_manager.py:
+
+
+import logging
+import pickle
+from random import Random
+from typing import List
+import numpy as np
+import math
+
+from fedscale.cloud.internal.client_metadata import ClientMetadata
+
+
+class ClientManager:
+
+    def __init__(self, mode, args, sample_seed=233):
+        self.client_metadata = {}
+        self.client_on_hosts = {}
+        self.mode = mode
+        self.filter_less = args.filter_less
+        self.filter_more = args.filter_more
+
+        self.ucb_sampler = None
+
+        if self.mode == 'oort':
+            from thirdparty.oort.oort import create_training_selector
+            self.ucb_sampler = create_training_selector(args=args)
+
+        if self.mode == 'bliss':
+            from thirdparty.bliss.bliss import create_training_selector
+            self.bliss_sampler = create_training_selector(args=args)
+
+
+        self.feasibleClients = []
+        self.rng = Random()
+        self.rng.seed(sample_seed)
+        self.count = 0
+        self.feasible_samples = 0
+        self.args = args
+
+        with open(args.clients_file, 'rb') as fin:
+            self.clients = pickle.load(fin)
+        self.clients_keys = list(self.clients.keys())
+
+    def register_client(self, host_id: int, client_id: int, size: int,
+                        duration: float = 1) -> None:
+        """Register client information to the client manager.
+
+        Args:
+            host_id (int): executor Id.
+            client_id (int): client Id.
+            size (int): number of samples on this client.
+            speed (Dict[str, float]): device speed (e.g., compuutation and communication).
+            duration (float): execution latency.
+
+        """
+        cd = self.clients[client_id]
+        # extract everything your modified ClientMetadata __init__ needs:
+        self.client_metadata[client_id] = ClientMetadata(
+            host_id=host_id,
+            client_id=client_id,
+            size=size,
+            cpu_flops=cd['CPU_FLOPS'],
+            gpu_flops=cd['GPU_FLOPS'],
+            timestamps_livelab=cd['timestamps-livelab'],
+            rate=cd['rate'],
+            timestamps_carat=cd['timestamps-carat'],
+            availability=cd['availability'],
+            batteryLevel=cd['batteryLevel'],
+            active=cd['active'],
+            inactive=cd['inactive'],
+            peak_throughput=cd['peak_throughput'],
+        )
+
+        # remove clients
+        if size >= self.filter_less and size <= self.filter_more:
+            self.feasibleClients.append(client_id)
+            self.feasible_samples += size
+
+            if self.mode == "oort":
+                feedbacks = {'reward': min(size, self.args.local_steps * self.args.batch_size),
+                             'duration': duration,
+                             }
+                self.ucb_sampler.register_client(client_id, feedbacks=feedbacks)
+            elif self.mode == "bliss":
+                feedbacks = {
+                    'reward': min(size, self.args.local_steps * self.args.batch_size),
+                    'metadata': {
+                        'osVersion': cd['osVersion'],
+                        'brand': cd['brand'],
+                        'os': cd['OS'],
+                        'cpu_flops': cd['CPU_FLOPS'],
+                        'gpu_flops': cd['GPU_FLOPS'],
+                        'internal_memory': cd['internal_memory'],
+                        'RAM': cd['RAM'],
+                        'peak_throughput': cd['peak_throughput'],
+                        'battery': cd['battery']
+                    }
+                }
+                self.bliss_sampler.register_client(client_id, feedbacks)
+        else:
+            del self.client_metadata[client_id]
+
+    def getAllClients(self):
+        return self.feasibleClients
+
+    def getAllClientsLength(self):
+        return len(self.feasibleClients)
+
+    def getClient(self, client_id):
+        return self.client_metadata[client_id]
+
+    def registerDuration(self, client_id, duration):
+        if self.mode == "oort":
+            self.ucb_sampler.update_duration(client_id, duration)
+
+        meta = self.client_metadata.get(client_id)
+        if meta is not None:
+            meta.last_duration = duration
+
+    def get_completion_time(self, client_id, cur_time, batch_size, local_steps, model_size, model_amount_parameters):
+
+        client_completion_time =  self.client_metadata[client_id].get_completion_time(
+            cur_time=cur_time,
+            batch_size=batch_size,
+            local_steps=local_steps,
+            model_size=model_size,
+            model_amount_parameters=model_amount_parameters
+        )
+
+        return client_completion_time
+
+
+    def registerSpeed(self, host_id, client_id, speed):
+        uniqueId = self.getUniqueId(host_id, client_id)
+        self.client_metadata[uniqueId].speed = speed
+
+    def registerScore(self, client_id, reward, time_stamp=0, duration=1., success=True):
+        self.register_feedback(client_id, reward, time_stamp=time_stamp, duration=duration, success=success)
+
+    def register_feedback(self, client_id: int, reward: float, time_stamp: float = 0,
+                          duration: float = 1., success: bool = True) -> None:
+        """Collect client execution feedbacks of last round.
+
+        Args:
+            client_id (int): client Id.
+            reward (float): execution utilities (processed feedbacks).
+            time_stamp (float): current wall clock time.
+            duration (float): system execution duration.
+            success (bool): whether this client runs successfully.
+
+        """
+        # currently, we only use distance as reward
+        if self.mode == "oort":
+            feedbacks = {
+                'reward': reward,
+                'duration': duration,
+                'status': True,
+                'time_stamp': time_stamp
+            }
+
+            self.ucb_sampler.update_client_util(client_id, feedbacks=feedbacks)
+
+        elif self.mode == "bliss":
+            feedbacks = {
+                'reward': reward if success else 0,
+                'success': success
+            }
+            self.bliss_sampler.update_client_metadata_post_training(client_id, feedbacks)
+
+    def registerClientScore(self, client_id, reward):
+        self.client_metadata[self.getUniqueId(0, client_id)].register_reward(reward)
+
+    def get_score(self, host_id, client_id):
+        uniqueId = self.getUniqueId(host_id, client_id)
+        return self.client_metadata[uniqueId].get_score()
+
+    def getClientsInfo(self):
+        clientInfo = {}
+        for i, client_id in enumerate(self.client_metadata.keys()):
+            client = self.client_metadata[client_id]
+            clientInfo[client.client_id] = client.distance
+        return clientInfo
+
+    def next_client_id_to_run(self, host_id):
+        init_id = host_id - 1
+        lenPossible = len(self.feasibleClients)
+
+        while True:
+            client_id = str(self.feasibleClients[init_id])
+            csize = self.client_metadata[client_id].size
+            if csize >= self.filter_less and csize <= self.filter_more:
+                return int(client_id)
+
+            init_id = max(
+                0, min(int(math.floor(self.rng.random() * lenPossible)), lenPossible - 1))
+
+    def clientSampler(self, client_id):
+        return self.client_metadata[self.getUniqueId(0, client_id)].size
+
+    def clientOnHost(self, client_ids, host_id):
+        self.client_on_hosts[host_id] = client_ids
+
+    def getCurrentclient_ids(self, host_id):
+        return self.client_on_hosts[host_id]
+
+    def getClientLenOnHost(self, host_id):
+        return len(self.client_on_hosts[host_id])
+
+    def getClientSize(self, client_id):
+        return self.client_metadata[self.getUniqueId(0, client_id)].size
+
+    def getSampleRatio(self, client_id, host_id, even=False):
+        totalSampleInTraining = 0.
+
+        if not even:
+            for key in self.client_on_hosts.keys():
+                for client in self.client_on_hosts[key]:
+                    uniqueId = self.getUniqueId(key, client)
+                    totalSampleInTraining += self.client_metadata[uniqueId].size
+
+            # 1./len(self.client_on_hosts.keys())
+            return float(self.client_metadata[self.getUniqueId(host_id, client_id)].size) / float(totalSampleInTraining)
+        else:
+            for key in self.client_on_hosts.keys():
+                totalSampleInTraining += len(self.client_on_hosts[key])
+
+            return 1. / totalSampleInTraining
+
+    def getOnlineClients(self, cur_time):
+        clients_online = [client_id for client_id in self.feasibleClients if self.client_metadata[client_id].is_active(cur_time)]
+
+        logging.info(f"Wall clock time: {round(cur_time)}, {len(clients_online)} clients online, " +
+                     f"{len(self.feasibleClients) - len(clients_online)} clients offline")
+
+        return clients_online
+
+    def isClientActive(self, client_id, cur_time):
+        return self.client_metadata[client_id].is_active(cur_time)
+
+    @staticmethod
+    def extract_last5_windows(
+            norm_t: float,
+            timestamps_livelab: np.ndarray,
+            rate: np.ndarray,
+            timestamps_carat: np.ndarray,
+            availability: np.ndarray,
+            batteryLevel: np.ndarray,
+            active,
+            inactive
+        ):
+        """
+        norm_t               -- current time in [0, 48*3600)
+        timestamps_livelab   -- 1-D np.array (ascending, wrapped @ 48 h)
+        rate                 -- 1-D np.array aligned with timestamps_livelab
+        timestamps_carat     -- 1-D np.array (ascending, wrapped @ 48 h)
+        availability         -- 1-D np.array aligned with timestamps_carat
+        batteryLevel         -- 1-D np.array aligned with timestamps_carat
+        active               -- array defining client activity intervals
+        inactive             -- array defining client inactivity intervals
+        --------------------------------------------------------------------
+        returns  rates[5], avail[5], battLvl[5]  (newest at index 4)
+        """
+
+        def _prev_index(idx, n):
+            """Circular index stepping backwards once in a list of length n."""
+            return (idx - 1) % n
+        
+        def is_active(active, inactive, cur_time):
+            """
+            Determines whether the client is active at the given simulation time.
+
+            Args:
+                cur_time (int or float): Current simulation time in seconds.
+
+            Returns:
+                bool: True if client is active, False otherwise.
+            """
+            T = 48 * 3600
+            t = cur_time % T
+
+            # Merge the two sorted lists, tag each timestamp with the phase it *starts*
+            boundaries = sorted(
+                [(ts, 'a') for ts in active] +
+                [(ts, 'i') for ts in inactive]
+            )
+
+            # Initial phase
+            phase = 'a' if (active and active[0] == 0) else 'i'
+
+            # Walk through boundaries and flip the phase whenever we pass one
+            for ts, _ in boundaries[1:]:  # skip the initial 0 entry
+                if t < ts:
+                    break
+                phase = 'i' if phase == 'a' else 'a'
+
+            return phase == 'a'
+
+        def _fill_series(ts, vals, active, inactive):
+            """internal: build one 5-value history list for a single series"""
+            n = len(ts)
+
+            # ----- find latest index <= norm_t -----
+            if norm_t < ts[0]:
+                idx = n - 1                       # wrap around
+            else:
+                idx = np.searchsorted(ts, norm_t, side='right') - 1
+
+            out = np.empty(5, dtype=vals.dtype)
+            out[4] = vals[idx]                   # most recent observation
+
+            last_good = out[4]                   # last value actually kept
+
+            # walk four more steps backwards
+            for k in range(3, -1, -1):           # fill slots 3,2,1,0
+                prev_idx = _prev_index(idx, n)
+                t_new   = ts[prev_idx]
+                t_old   = ts[idx]
+
+                # mid-point to test activity
+                mid_t = (t_old + t_new) / 2.0
+                # wrap midpoint if we crossed 0 on the circular time line
+                if t_old < t_new:                # crossed 0 boundary
+                    mid_t = (mid_t + 24*3600) % (48*3600)
+
+                if is_active(active, inactive, mid_t):          # OK – keep real value
+                    last_good = vals[prev_idx]
+                # else: keep last_good (i.e. duplicate)
+
+                out[k] = last_good
+                idx = prev_idx                   # move the cursor
+
+            return out
+
+        rates          = _fill_series(timestamps_livelab, rate, active, inactive)
+        availabilities = _fill_series(timestamps_carat, availability, active, inactive)
+        batteryLevels  = _fill_series(timestamps_carat, batteryLevel, active, inactive)
+
+        return rates, availabilities, batteryLevels
+
+    def send_metadata(self, clients: list[int], cur_time, update_fn):
+
+        for client_id in clients:
+            client_metadata = self.client_metadata[client_id]
+
+            timestamps_livelab = client_metadata.timestamps_livelab
+            rate = client_metadata.rate
+
+            timestamps_carat = client_metadata.timestamps_carat
+            availability = client_metadata.availability
+            batteryLevel = client_metadata.batteryLevel
+
+            active = client_metadata.active
+            inactive = client_metadata.inactive
+
+            norm_t = cur_time % (48 * 3600)
+
+            rates, availabilities, batteryLevels = self.extract_last5_windows(norm_t, timestamps_livelab, rate, timestamps_carat, availability, batteryLevel, active, inactive)
+
+            update_fn(
+                    {
+                        'client_id': client_id,
+                        'dynamic_metadata':
+                        {
+                            'rates': rates,
+                            'availabilities': availabilities,
+                            'batteryLevels': batteryLevels
+                        }
+                    }
+                )
+
+
+    def select_participants(self, num_of_clients: int, cur_time: float = 0) -> List[int]:
+        """Select participating clients for current execution task.
+
+        Args:
+            num_of_clients (int): number of participants to select.
+            cur_time (float): current wall clock time.
+
+        Returns:
+            List[int]: indices of selected clients.
+
+        """
+        self.count += 1
+
+        clients_online = self.getOnlineClients(cur_time)
+
+        if len(clients_online) <= num_of_clients:
+            return clients_online
+
+        pickled_clients = None
+        clients_online_set = set(clients_online)
+
+        if self.mode == "oort" and self.count > 1:
+            pickled_clients = self.ucb_sampler.select_participant(
+                num_of_clients, feasible_clients=clients_online_set)
+            
+        elif self.mode == "bliss":
+
+            clients_to_predict_utility = self.bliss_sampler.request_clients_to_predict_utility(clients_online)
+            clients_to_refresh_utility = self.bliss_sampler.request_clients_to_refresh_utility(clients_online)
+
+            self.send_metadata(clients_to_predict_utility, cur_time, self.bliss_sampler.send_clients_to_predict)
+            self.send_metadata(clients_to_refresh_utility, cur_time, self.bliss_sampler.send_clients_to_refresh)
+
+            pickled_clients = self.bliss_sampler.select_participant(num_of_clients)
+
+            self.send_metadata(pickled_clients, cur_time, self.bliss_sampler.update_client_metadata_pre_training)
+
+        else:
+            self.rng.shuffle(clients_online)
+            client_len = min(num_of_clients, len(clients_online))
+            pickled_clients = clients_online[:client_len]   
+
+        return pickled_clients
+
+    def resampleClients(self, num_of_clients, cur_time=0):
+        return self.select_participants(num_of_clients, cur_time)
+
+    def getAllMetrics(self):
+        if self.mode == "oort":
+            return self.ucb_sampler.getAllMetrics()
+        elif self.mode == "bliss":
+            return self.bliss_sampler.getAllMetrics()
+
+    def getDataInfo(self):
+        return {'total_feasible_clients': len(self.feasibleClients), 'total_num_samples': self.feasible_samples}
+
+
+
+client_metadata.py:
+
+import numpy as np
+from typing import Callable
+from fedscale.cloud.fllibs import *
+
+
+class ClientMetadata:
+    """
+    Contains the server-side metadata for a single client,
+    including static device capacities and dynamic time-varying traces.
+    """
+
+    def __init__(
+        self,
+        host_id: int,
+        client_id: int,
+        size: int,
+        # Static compute capacities
+        cpu_flops: float,
+        gpu_flops: float,
+        # Dynamic traces: livelab (network) 
+        timestamps_livelab: list[int],
+        rate: list[int],
+        # Dynamic traces: carat (compute/availability)
+        timestamps_carat: list[int],
+        availability: list[int],
+        batteryLevel: list[int],
+        # activity traces
+        active: list[int],
+        inactive: list[int],
+        peak_throughput
+    ):
+        """
+        :param host_id:   ID of the executor handling this client
+        :param client_id: Global client ID
+        :param cpu_flops:       Static compute capacity (e.g. FLOPS baseline)
+        :param gpu_flops:       Static GPU capacity (if used)
+        :param timestamps_livelab: sorted timestamps (s) for network-rate changes
+        :param rate:      upload/download rate trace (Mb/s) at each timestamp
+        :param timestamps_carat:    sorted timestamps (s) for compute changes
+        :param availability: CPU/GPU availability percentage (0–100) per timestamp
+        :param batteryLevel:  battery percentage (0–100) per timestamp
+        """
+        # Identity
+        self.host_id = host_id
+        self.client_id = client_id
+        self.size = size
+
+        # Static capacities
+        self.cpu_flops = cpu_flops
+        self.gpu_flops = gpu_flops
+
+        # Network traces (livelab)
+        self.timestamps_livelab = timestamps_livelab
+        self.rate = rate
+        self.peak_throughput = peak_throughput
+
+        # Compute traces (carat)
+        self.timestamps_carat = timestamps_carat
+        self.availability = availability
+        self.batteryLevel = batteryLevel
+
+        # activity intervals
+        self.active = active
+        self.inactive = inactive
+
+        # For adaptive sampling (e.g. Oort)
+        self.score = 0
+
+        # Noise to perturb FLOPS in one round
+        self._round_noise = 1.0
+
+        # most-recent end-to-end latency (sec)
+        self.last_duration = None
+
+    def get_score(self):
+        return self.score
+
+    def register_reward(self, reward: float):
+        """Update the sampling score for this client."""
+        self.score = reward
+
+    def is_active(self, cur_time):
+        """
+        Determines whether the client is active at the given simulation time.
+
+        Args:
+            cur_time (int or float): Current simulation time in seconds.
+
+        Returns:
+            bool: True if client is active, False otherwise.
+        """
+        T = 48 * 3600
+        t = cur_time % T
+
+        # Merge the two sorted lists, tag each timestamp with the phase it *starts*
+        boundaries = sorted(
+            [(ts, 'a') for ts in self.active] +
+            [(ts, 'i') for ts in self.inactive]
+        )
+
+        # Initial phase
+        phase = 'a' if (self.active and self.active[0] == 0) else 'i'
+
+        # Walk through boundaries and flip the phase whenever we pass one
+        for ts, _ in boundaries[1:]:  # skip the initial 0 entry
+            if t < ts:
+                break
+            phase = 'i' if phase == 'a' else 'a'
+
+        return phase == 'a'
+
+
+    def _lookup(self, timestamps: list[int], values: list[float], t: float) -> float:
+        """Return the trace value at sim-time t, assuming timestamps are sorted."""
+        norm_t = t % (48*3600)
+        if norm_t < timestamps[0]:
+            return values[0]
+        idx = max(i for i, ts in enumerate(timestamps) if ts <= norm_t)
+        return values[idx]
+
+
+    def bandwidth(self, t):
+        rate = self._lookup(self.timestamps_livelab, self.rate, t)
+        return self.peak_throughput * rate/54  # Mb/s
+
+    def compute_speed(self, t: float) -> float:
+        """
+        Calculate effective FLOPS/s at time t, factoring in availability,
+        battery level, and log-normal noise.
+        """
+        # 1) Base peak FLOPS
+        base_peak = self.cpu_flops + self.gpu_flops  # CPU_FLOPS + GPU_FLOPS
+
+        # 2) Availability fraction (0–1)
+        avail_pct = self._lookup(self.timestamps_carat, self.availability, t) / 100.0
+
+        # 3) Battery reduction factor
+        batt = self._lookup(self.timestamps_carat, self.batteryLevel, t)
+        if batt >= 70:
+            batt_factor = 1.0
+        elif batt >= 50:
+            batt_factor = 0.9
+        elif batt >= 30:
+            batt_factor = 0.8
+        elif batt >= 10:
+            batt_factor = 0.6
+        else:
+            batt_factor = 0.4
+
+        # 5) Final effective FLOPS/s
+        return base_peak * avail_pct * batt_factor * self._round_noise
+
+
+    def _simulate_data_phase(
+        self,
+        start_time: float,
+        total_work: float,
+        timestamps: list[int],
+        rate_fn: Callable[[float], float],
+        window: float,
+        scale: float,
+    ) -> float:
+        """
+        Generic simulator for download/upload or compute:
+        - Loops over each interval where the rate_fn is constant,
+        - Subtracts work done until total_work <= 0, then returns the exact finish time.
+
+        Args:
+            start_time: absolute sim time when phase begins.
+            total_work: total MB (or total FLOPs) to complete.
+            timestamps: breakpoints (in [0, window]) for when rate_fn may change.
+            rate_fn: function t->rate (MB/s or FLOPS).
+            window: cycle length (48h).
+            scale: multiplier on rate_fn (e.g. 1.0).
+
+        Returns:
+            float: sim time when work_remaining hits zero.
+        """
+        # sort the cycle breakpoints
+        pts = timestamps
+        # normalize into window
+        t0 = start_time % window
+        abs_cycle_start = start_time - t0
+
+        # find next index in pts after t0
+        idx = next((i for i, x in enumerate(pts) if x > t0), len(pts))
+
+        curr_time = start_time
+        work_rem = total_work
+
+        while True:
+            # determine end of this sub-interval
+            if idx < len(pts):
+                next_point = abs_cycle_start + pts[idx]
+            else:
+                # wrap-around to end of window
+                next_point = abs_cycle_start + window
+
+            dt = next_point - curr_time
+            rate = rate_fn(curr_time) * scale
+            if rate <= 0:
+                raise RuntimeError(f"Zero rate at t={curr_time}")
+
+            potential = rate * dt
+            if potential >= work_rem:
+                # finishes within this interval
+                return curr_time + (work_rem / rate)
+
+            # subtract what we can do in this slice
+            work_rem -= potential
+            # advance time
+            curr_time = next_point
+
+            # if we wrapped around, shift the cycle
+            if idx >= len(pts):
+                abs_cycle_start += window
+                t0 = 0
+                idx = 0
+            else:
+                idx += 1
+
+    def get_completion_time(
+        self,
+        cur_time: int,
+        batch_size: int,
+        local_steps: int,
+        model_size: int,
+        model_amount_parameters: int,
+        augmentation_factor: float = 3.0,
+        reduction_factor: float = 0.5
+    ) -> float:
+        """
+        Simulate download → local training → upload, using dynamic bandwidth and compute traces.
+
+        Args:
+            cur_time: simulation time (s) when download starts.
+            batch_size: local batch size.
+            local_steps: number of local training iterations.
+            model_size: size of the model (Mb)
+            model_amount_parameters: number of model parameters.
+            augmentation_factor: multiplies forward-flop cost to include backward.
+            reduction_factor: upload speed is bandwidth * this factor.
+
+        Returns:
+            float: simulation time (s) when upload finishes.
+        """
+        
+        # Constants
+        WINDOW = 48 * 3600  # 48h in seconds
+
+        # Noise
+        self._round_noise = np.random.lognormal(mean=0.0, sigma=0.25)
+
+        # 2) DOWNLOAD phase
+        download_end = self._simulate_data_phase(
+            start_time=cur_time,
+            total_work=model_size,
+            timestamps=self.timestamps_livelab,
+            rate_fn=self.bandwidth,
+            window=WINDOW,
+            scale=1.0  # download at full bandwidth
+        )
+
+        # 3) COMPUTE phase
+        # total FLOPs = augmentation_factor × model_amount_parameters × batch_size × local_steps
+        total_ops = augmentation_factor * model_amount_parameters * batch_size * local_steps
+        compute_end = self._simulate_data_phase(
+            start_time=download_end,
+            total_work=total_ops,
+            timestamps=self.timestamps_carat,
+            rate_fn=self.compute_speed,
+            window=WINDOW,
+            scale=1.0  # compute_speed already in FLOPS
+        )
+
+        # 4) UPLOAD phase
+        upload_end = self._simulate_data_phase(
+            start_time=compute_end,
+            total_work=model_size / reduction_factor, # Makes the upload phase twice as long
+            timestamps=self.timestamps_livelab,
+            rate_fn=self.bandwidth,
+            window=WINDOW,
+            scale=1.0  # upload uses same units MB/s, reduction applied via total_work
+        )
+
+        return (upload_end-cur_time)
+
+    def get_completion_time_lognormal(
+        self,
+        cur_time: float,
+        batch_size: int,
+        local_steps: int,
+        model_size: int,
+        reduction_factor: float = 0.5,
+        mean_seconds_per_sample: float = 0.005,
+        tail_skew: float = 0.6,
+    ) -> float:
+        """
+        Simulate download → lognormal‐based compute → upload.
+
+        Compute time is sampled as:
+          device_speed ~ LogNormal(mean=1, sigma=tail_skew)
+          comp_time = device_speed
+                    * mean_seconds_per_sample
+                    * batch_size
+                    * local_steps
+
+        Returns the simulated time when upload completes.
+        """
+
+        # 2) DOWNLOAD phase (same as before)
+        download_end = self._simulate_data_phase(
+            start_time=cur_time,
+            total_work=model_size,
+            timestamps=self.timestamps_livelab,
+            rate_fn=self.bandwidth,
+            window=48 * 3600,
+            scale=1.0,
+        )
+
+        # 3) COMPUTE phase (lognormal sample)
+        device_speed = max(0.0001, np.random.lognormal(mean=1.0, sigma=tail_skew))
+        comp_time = device_speed * mean_seconds_per_sample * batch_size * local_steps
+        compute_end = download_end + comp_time
+
+        # 4) UPLOAD phase (same as before, with reduction)
+        upload_end = self._simulate_data_phase(
+            start_time=compute_end,
+            total_work=model_mb / reduction_factor,
+            timestamps=self.timestamps_livelab,
+            rate_fn=self.bandwidth,
+            window=48 * 3600,
+            scale=1.0,
+        )
+
+        return upload_end
+
+
+
+
+
+bliss.py:
+
+
+"""Bliss – Adaptive client‑selection strategy for FedScale.
+
+This implementation follows the high‑level pipeline described in the PDF draft
+(“Adaptive Client Selection Strategy in Cross‑Device Federated Learning”).  The
+public API remains **identical** to Oort’s so that FedScale can switch between
+`sample_mode: oort` and `sample_mode: bliss` without touching core code.
+
+The predictive models `gθ` (utility drift) and `hϕ` (utility estimation for
+unseen clients) are **stubbed with very lightweight linear regressors trained
+via `numpy.linalg.lstsq`** so that they are fast, dependency‑free and keep the
+shape of the algorithm.  Drop‑in replacement with more sophisticated models is
+straight‑forward – just plug them behind the same method signatures.
+"""
+
+import logging
+import random
+from collections import deque
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+
+import numpy as np
+
+import sys, pathlib
+repo_root = pathlib.Path(__file__).resolve().parents[2]   # adjust depth if needed
+sys.path.append(str(repo_root))
+
+from thirdparty.bliss.encode import encode_static_metadata
+
+# -----------------------------------------------------------------------------
+# Public factory helpers – FedScale expects these names
+# -----------------------------------------------------------------------------
+
+def create_training_selector(args):
+    """Factory used by `ClientManager` during training‑time sampling."""
+    return _training_selector(args)
+
+# -----------------------------------------------------------------------------
+# Training selector – core of Bliss
+# -----------------------------------------------------------------------------
+
+class _training_selector:
+    """Bliss training‑phase selector (implements Algorithm 1 from the PDF)."""
+
+    def __init__(self, args, sample_seed: int = 233):
+        self.number_clients_to_predict_utility = args.number_clients_to_predict_utility
+        self.number_clients_to_refresh_utility = args.number_clients_to_refresh_utility
+        self.amount_clients_refresh_train_set = args.amount_clients_refresh_train_set
+        self.amount_clients_predict_train_set = args.amount_clients_predict_train_set
+        self.ema_alpha = args.ema_alpha
+        self.rng = random.Random(sample_seed)
+        self.round = 0
+
+        # Per‑client metadata
+        self.clients: Dict[int, Dict[str, Any]] = {}
+
+        self.clients_to_predict = []
+        self.clients_to_refresh = []
+
+        # Buffers for (Δm, Δu) pairs used to train gθ
+        self._drift_X: deque[np.ndarray] = deque(maxlen=self.amount_clients_refresh_train_set)
+        self._drift_y: deque[float] = deque(maxlen=self.amount_clients_predict_train_set)
+        self._g_w: Optional[np.ndarray] = None  # weights for gθ
+        self._g_b: Optional[float] = None
+
+        # Linear regressor weights (gθ and hϕ)
+        self._g_w: np.ndarray | None = None
+        self._g_b: float | None = None
+        self._h_w: np.ndarray | None = None
+        self._h_b: float | None = None
+
+        logging.info("[Bliss] training selector ready (seed=%d)", sample_seed)
+
+    # ------------------------------------------------------------------
+    # Interface called by ClientManager / Aggregator
+    # ------------------------------------------------------------------
+
+    def register_client(self, client_id: int, feedbacks: Dict[str, Any]):
+        """Add a new client to the system (initially considered *unseen*)."""
+        if client_id in self.clients:
+            logging.debug("[Bliss] Client %s already in seen set – skipping re‑register", client_id)
+            return
+        self.clients[client_id] = {
+            'utility': 0.0,
+            'last_utility': 0.0,
+            'success': False,
+            'last_success': False,
+            'static_metadata':feedbacks.get('metadata'),
+            'dynamic_metadata': {
+                'rates': np.zeros(5),
+                'availabilities': np.zeros(5),
+                'batteryLevels': np.zeros(5),
+            },
+            'last_dynamic_metadata': {
+                'availabilities': np.zeros(5),
+                'rates': np.zeros(5),
+                'batteryLevels': np.zeros(5),
+            },
+            'round': -1,
+            'last_round': -1,
+            'seen': 0
+        }
+
+    def update_client_metadata_pre_training(self, feedbacks: Dict[str, Any]):
+        client_id = feedbacks['client_id']
+
+        self.clients[client_id]['last_dynamic_metadata'] = self.clients[client_id]['dynamic_metadata']
+        self.clients[client_id]['dynamic_metadata'] = feedbacks['dynamic_metadata']
+
+
+    # Called once per round for *participating* clients
+    def update_client_metadata_post_training(self, client_id: int, feedbacks: Dict[str, Any]):
+        client = self.clients[client_id]
+        
+        util = feedbacks['reward']
+        success = feedbacks['success']
+
+        client['last_utility'] = client['utility']
+        client['last_success'] = client['success']
+
+        # EMA update
+        client['utility'] = self.ema_alpha * util + (1 - self.ema_alpha) * client['last_utility']
+
+        # No EMA
+        # client['utility'] = util
+        
+        client['success'] = success
+        client['last_round'] = self.round
+
+    # ------------------------------------------------------------------
+    # Weighted sampling helper
+    # ------------------------------------------------------------------
+
+    def _weighted_sample(self, pool_ids: List[int], k: int) -> List[int]:
+        """Sample *k* distinct ids where P(id) ∝ utility(id)."""
+        if len(pool_ids) <= k:
+            return pool_ids.copy()
+
+        util = np.array([self.clients[cid]["utility"] for cid in pool_ids], dtype=float)
+        # Ensure strictly positive weights
+        util = np.clip(util, 1e-6, None)
+        probs = util / util.sum()
+        chosen = list(np.random.choice(pool_ids, size=k, replace=False, p=probs))
+        return chosen
+    
+    # ------------------------------------------------------------------
+    # Placeholder encoder (to be replaced later)
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Master helper – turns the whole static-metadata dict into ONE vec
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def encode_predict(client_dicts: List[Dict[str, Any]]
+                    ) -> Tuple[np.ndarray, List[int]]:
+        """
+        Build the training-/inference-matrix for **gθ**.
+
+        Parameters
+        ----------
+        client_dicts : List[Dict]
+            Each item is
+            {
+                "client_id"        : <int>,
+                "dynamic_metadata" : {"rates": …, "availabilities": …, "batteryLevels": …},
+                "static_metadata"  : {... all static keys ...}
+            }
+
+        Returns
+        -------
+        X   : np.ndarray  shape = (N , 15 + 63) = (N , 78)   (float32)
+            15  = 3×5 normalised dynamic values
+            63   = length of encode_static_metadata()
+        ids : List[int]   original client-ids in the same order as rows of X
+        """
+        if not client_dicts:
+            return np.empty((0, 0), dtype=np.float32), []
+
+        dyn_rows: List[np.ndarray] = []
+        ids:      List[int]        = []
+
+        # normalisation constants (vectorised)
+        _RATE_MIN, _RATE_SPAN   = 1.0, 53.0         # 1 … 54
+        _AVAIL_MIN, _AVAIL_SPAN = 35.0, 65.0        # 35 … 100
+        _BATT_MIN, _BATT_SPAN   = -1.0, 100.0       # −1 … 99
+
+        for rec in client_dicts:
+            cid   = rec["client_id"]
+            ids.append(cid)
+
+            dyn = rec["dynamic_metadata"]  # three *5-long* numpy arrays
+            rate_vec = (np.asarray(dyn["rates"],          dtype=np.float32) - _RATE_MIN)  / _RATE_SPAN
+            avail_vec= (np.asarray(dyn["availabilities"], dtype=np.float32) - _AVAIL_MIN) / _AVAIL_SPAN
+            batt_vec = (np.asarray(dyn["batteryLevels"],  dtype=np.float32) - _BATT_MIN)  / _BATT_SPAN
+
+            dyn_feat = np.concatenate([rate_vec, avail_vec, batt_vec])   # (15,)
+
+            stat_feat = encode_static_metadata(rec["static_metadata"])   # (S,)
+
+            dyn_rows.append(np.concatenate([dyn_feat, stat_feat]))       # (15+S,)
+
+        X = np.stack(dyn_rows).astype(np.float32)   # (N , 15+S)
+
+        return X, ids
+    
+    # bliss/_training_selector.py  (inside the class)
+
+    @staticmethod
+    def encode_refresh(records: List[Dict[str, Any]]
+                    ) -> Tuple[np.ndarray, List[int]]:
+        """
+        Build the design-matrix to train **hϕ** (the refresh model).
+
+        Each *record* contains both the *current* and the *previous* dynamic
+        metadata, plus a few scalar history fields:
+
+            {
+                "client_id"            : int,
+                "dynamic_metadata"     : {"rates": …, "availabilities": …, "batteryLevels": …},
+                "last_dynamic_metadata": {"rates": …, "availabilities": …, "batteryLevels": …},
+                "static_metadata"      : {...},
+                "utility"              : float,
+                "success"              : bool | int,
+                "round"                : int,
+                "last_utility"         : float,
+                "last_success"         : bool | int,
+                "last_round"           : int,
+            }
+
+        Returns
+        -------
+        X   : np.ndarray  shape = (N, 15 + 63 + 6) = (N, 84) (float32)
+            ├─ 15  deltas of current – previous dynamic features
+            ├─  63  static-metadata encoding
+            └─  6  scalar history features
+        ids : List[int]  client-ids matching X’s rows
+        """
+        if not records:
+            return np.empty((0, 0), dtype=np.float32), []
+
+        ids:  List[int]        = []
+        rows: List[np.ndarray] = []
+
+        # ----------- normalisation constants (same as encode_predict) ----------
+        _RATE_MIN, _RATE_SPAN   = 1.0, 53.0      # 1 … 54
+        _AVAIL_MIN, _AVAIL_SPAN = 35.0, 65.0     # 35 … 100
+        _BATT_MIN, _BATT_SPAN   = -1.0, 100.0    # –1 … 99
+
+        for rec in records:
+            cid = rec["client_id"]
+            ids.append(cid)
+
+            cur_dyn  = rec["dynamic_metadata"]
+            prev_dyn = rec["last_dynamic_metadata"]
+
+            # --- helper --------------------------------------------------------
+            def _norm(v, vmin, span):
+                return (np.asarray(v, dtype=np.float32) - vmin) / span
+
+            # current & previous (all length-5 vectors)
+            r_now  = _norm(cur_dyn["rates"],          _RATE_MIN,  _RATE_SPAN)
+            r_prev = _norm(prev_dyn["rates"],         _RATE_MIN,  _RATE_SPAN)
+
+            a_now  = _norm(cur_dyn["availabilities"], _AVAIL_MIN, _AVAIL_SPAN)
+            a_prev = _norm(prev_dyn["availabilities"],_AVAIL_MIN, _AVAIL_SPAN)
+
+            b_now  = _norm(cur_dyn["batteryLevels"],  _BATT_MIN,  _BATT_SPAN)
+            b_prev = _norm(prev_dyn["batteryLevels"], _BATT_MIN,  _BATT_SPAN)
+
+            delta_dyn = np.concatenate([r_now - r_prev,
+                                        a_now - a_prev,
+                                        b_now - b_prev])          # (15,)
+
+            # --- static features ----------------------------------------------
+            static_vec = encode_static_metadata(rec["static_metadata"])
+
+            # --- scalar history -----------------------------------------------
+            last_util   = float(rec.get("last_utility",   0.0))
+            last_succ   = 1.0 if rec.get("last_success") else 0.0
+            last_round  = float(rec.get("last_round",     0))
+
+            curr_util   = float(rec.get("utility",        0.0))
+            curr_succ   = 1.0 if rec.get("success")      else 0.0
+            curr_round  = float(rec.get("round",          0))
+
+            hist_vec = np.asarray(
+                [last_util, last_succ, last_round,
+                curr_util, curr_succ, curr_round],
+                dtype=np.float32
+            )
+
+            rows.append(np.concatenate([delta_dyn, static_vec, hist_vec]))
+
+        X = np.stack(rows).astype(np.float32)   # (N , 15 + S + 6)
+        return X, ids
+
+
+
+    # ------------------------------------------------------------------
+    # Main Selection – called by ClientManager
+    # ------------------------------------------------------------------
+
+    def _is_seen(self, cid: int) -> bool:
+        return self.clients[cid]['seen'] > 0
+
+    def request_clients_to_refresh_utility(self, online_ids: List[int]) -> List[int]:
+        """
+        Return up to `self.number_clients_to_refresh_utility` *seen* clients,
+        ranked by current utility.
+        """
+
+        seen_online = [cid for cid in online_ids if self._is_seen(cid)]
+        if len(seen_online) <= self.number_clients_to_refresh_utility:
+            return seen_online
+
+        # rank by utility, higher first
+        ranked = sorted(seen_online,
+                        key=lambda cid: self.clients[cid]['utility'],
+                        reverse=True)
+        return ranked[: self.number_clients_to_refresh_utility]
+
+
+    def request_clients_to_predict_utility(self, online_ids: List[int]) -> List[int]:
+        """
+        Uniformly sample up to `self.number_clients_to_predict_utility`
+        *unseen* clients from those currently online.
+        """
+        unseen_online = [cid for cid in online_ids if not self._is_seen(cid)]
+        k = min(self.number_clients_to_predict_utility, len(unseen_online))
+        if k == 0:
+            return []
+        return self.rng.sample(unseen_online, k)
+
+    def send_clients_to_predict(self, client_metadata: Dict[str, Any]):
+        self.clients_to_predict.append(client_metadata)
+
+    def send_clients_to_refresh(self, client_metadata: Dict[str, Any]):
+        self.clients_to_refresh.append(client_metadata) 
+
+
+    def select_participant(self, num_of_clients: int) -> List[int]:
+        """Return ``num_of_clients`` client IDs with the highest *predicted* utility."""
+
+        # ------------------------------------------------------------------
+        # 1 ▸ TRAIN **gθ** – map (static + current dynamic) → utility
+        #     Training data: any client we have *already* seen at least once.
+        # ------------------------------------------------------------------
+        seen_once_ids = [cid for cid, info in self.clients.items() if info["seen"] > 0]
+        train_predict_ids = self._weighted_sample(
+            seen_once_ids,
+            min(self.amount_clients_predict_train_set, len(seen_once_ids)),
+        )
+
+        if train_predict_ids:
+            train_dicts = [
+                {
+                    "client_id": cid,
+                    "dynamic_metadata": self.clients[cid]["dynamic_metadata"],
+                    "static_metadata": self.clients[cid]["static_metadata"],
+                }
+                for cid in train_predict_ids
+            ]
+            try:
+                X_train, _ = self.encode_predict(train_dicts)
+                y_train = np.array([self.clients[cid]["utility"] for cid in train_predict_ids])
+                if X_train.size > 0 and not np.allclose(y_train, 0):
+                    self._g_w, self._g_b = _linreg_fit(X_train, y_train)
+            except NotImplementedError:
+                logging.warning("[Bliss] encode() not implemented – gθ not updated")
+
+        # ------------------------------------------------------------------
+        # 2 ▸ TRAIN **hϕ** – refresh model.  Need at least 2 observations / client.
+        # ------------------------------------------------------------------
+        seen_twice_ids = [cid for cid, info in self.clients.items() if info["seen"] > 1]
+        train_refresh_ids = self._weighted_sample(
+            seen_twice_ids,
+            min(self.amount_clients_refresh_train_set, len(seen_twice_ids)),
+        )
+
+        if train_refresh_ids:
+            enriched: List[Dict[str, Any]] = []
+            for cid in train_refresh_ids:
+                base = self.clients[cid]
+                enriched.append(
+                    {
+                        "client_id": cid,
+                        "dynamic_metadata": base["dynamic_metadata"],
+                        "last_dynamic_metadata": base["last_dynamic_metadata"],
+                        "static_metadata": base["static_metadata"],
+                        "utility": base["utility"],
+                        "success": base["success"],
+                        "round": base["round"],
+                        "last_utility": base["last_utility"],
+                        "last_success": base["last_success"],
+                        "last_round": base["last_round"],
+                    }
+                )
+            try:
+                X_train_r, _ = self.encode_refresh(enriched)
+                y_train_r = np.array([self.clients[cid]["utility"] for cid in train_refresh_ids])
+                if X_train_r.size > 0 and not np.allclose(y_train_r, 0):
+                    self._h_w, self._h_b = _linreg_fit(X_train_r, y_train_r)
+            except NotImplementedError:
+                logging.warning("[Bliss] encode() not implemented – hϕ not updated")
+
+        # ------------------------------------------------------------------
+        # 3 ▸ PREDICT utilities for the online candidates passed via ClientManager
+        # ------------------------------------------------------------------
+        predictions: List[Tuple[int, float]] = []
+
+        # --- (a) Unseen online clients → gθ ---------------------------------
+        if self.clients_to_predict:
+            try:
+                X_pred, ids_pred = self.encode_predict(self.clients_to_predict)
+                if self._g_w is not None and X_pred.size > 0:
+                    util_hat = _linreg_predict(X_pred, self._g_w, self._g_b)
+                else:
+                    util_hat = np.zeros(len(ids_pred))
+                predictions.extend(list(zip(ids_pred, util_hat.tolist())))
+            except NotImplementedError:
+                logging.warning("[Bliss] encode() not implemented – assigning zero utility to unseen predictions")
+                predictions.extend([(d["client_id"], 0.0) for d in self.clients_to_predict])
+
+        # --- (b) Seen online clients to refresh → hϕ ------------------------
+        if self.clients_to_refresh:
+            enriched_refresh: List[Dict[str, Any]] = []
+            for d in self.clients_to_refresh:
+                cid = d["client_id"]
+                base = self.clients[cid]
+                enriched_refresh.append(
+                    {
+                        **d,  # dynamic data already present
+                        "static_metadata": base["static_metadata"],
+                        "last_dynamic_metadata": base["dynamic_metadata"],
+                        "last_utility": base["utility"],
+                        "last_success": base["success"],
+                        "last_round": base["round"],
+                    }
+                )
+            try:
+                X_ref, ids_ref = self.encode_refresh(enriched_refresh)
+                if self._h_w is not None and X_ref.size > 0:
+                    util_hat_r = _linreg_predict(X_ref, self._h_w, self._h_b)
+                else:
+                    util_hat_r = np.zeros(len(ids_ref))
+                predictions.extend(list(zip(ids_ref, util_hat_r.tolist())))
+            except NotImplementedError:
+                logging.warning("[Bliss] encode() not implemented – assigning zero utility to refresh predictions")
+                predictions.extend([(d["client_id"], 0.0) for d in enriched_refresh])
+
+        # ------------------------------------------------------------------
+        # 4 ▸ Handle edge cases & pick top‑K
+        # ------------------------------------------------------------------
+        if not predictions:
+            logging.warning("[Bliss] No predictions available – fallback to random sample")
+        else:
+            predictions.sort(key=lambda t: t[1], reverse=True)
+            picked = [cid for cid, _ in predictions[:num_of_clients]]
+
+        # Pad if needed (should be rare)
+        if len(picked) < num_of_clients:
+            logging.info(f"[Bliss] only {len(picked)} clients out of the requested {num_of_clients}")
+
+        # ------------------------------------------------------------------
+        # 5 ▸ Book‑keeping & cleanup
+        # ------------------------------------------------------------------
+        for cid in picked:
+            self.clients[cid]["seen"] += 1
+            self.clients[cid]["round"] = self.round
+
+        self.round += 1
+        self.clients_to_predict.clear()
+        self.clients_to_refresh.clear()
+
+        return picked
+
+    # ------------------------------------------------------------------
+    # Utility helpers (some remain stubbed)
+    # ------------------------------------------------------------------
+
+    def calculateSumUtil(self, clientList: Sequence[int]) -> float:  # noqa: N802 – keep Oort naming
+        return float(sum(self.clients[c]['utility'] for c in clientList if c in self.clients))
+
+    def get_median_reward(self) -> float:
+        utils = [c['utility'] for c in self.clients.values()]
+        if not utils:
+            return 0.0
+        return float(np.median(utils))
+
+    def getAllMetrics(self):  # noqa: N802 – keep Oort name
+        return {
+            'round': self.round,
+            'seen': len(self.clients), # to change
+            'unseen': len(self.clients), # to change
+            'median_util': self.get_median_reward(),
+        }
+
+# -----------------------------------------------------------------------------
+# Internal helper – extremely light linear regressor for drift/prediction
+# -----------------------------------------------------------------------------
+
+def _linreg_fit(X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, float]:
+    """Return (weights, bias) solving y ≈ Xw + b via least‑squares."""
+    # Add bias term
+    X_ = np.hstack([X, np.ones((X.shape[0], 1))])
+    w, *_ = np.linalg.lstsq(X_, y, rcond=None)
+    return w[:-1], w[-1]
+
+
+def _linreg_predict(X: np.ndarray, w: np.ndarray, b: float) -> np.ndarray:
+    return X @ w + b
+
+
+
+
+encode.py:
+
+
+import re
+import numpy as np
+from typing import Any, Dict
+import json
+from pathlib import Path
+
+# Ordered from oldest → newest
+_OS_CODE_NAMES = [
+    "Froyo", "Gingerbread", "Honeycomb", "Ice Cream Sandwich",
+    "Jelly Bean", "KitKat", "Lollipop", "Marshmallow",
+    "Nougat", "Oreo", "Pie"
+]
+# Map each code-name to a representative *major* Android version
+_CODE_TO_MAJOR = {
+    "Froyo": 2,  "Gingerbread": 2,  "Honeycomb": 3,  "Ice Cream Sandwich": 4,
+    "Jelly Bean": 4,  "KitKat": 4,  "Lollipop": 5,  "Marshmallow": 6,
+    "Nougat": 7,  "Oreo": 8,  "Pie": 9
+}
+
+_latest_rank = len(_OS_CODE_NAMES) - 1          # normaliser for 0-1 scaling
+_version_re = re.compile(r"(\d+)")             # grabs the major part of “4.4.2”
+
+def encode_os_osVersion(static_meta: Dict[str, Any]) -> np.ndarray:
+    """
+    Return a vector **[modernity , update_score]** in the range [0,1]².
+
+    modernity    – how new is the newest OS mentioned in the long *os* string  
+    update_score – how up-to-date is the installed *osVersion* relative to that
+                   newest OS (1 = fully up-to-date, 0 = very outdated)
+    """
+    # ---------- 1. modernity from the long ‘os’ description ----------------
+    os_field = str(static_meta.get("os", ""))
+
+    best_rank  = -1          # −1 ⇒ “unknown / non-Android”
+    best_major = 0
+    for rank, name in enumerate(_OS_CODE_NAMES):
+        if name.lower() in os_field.lower():
+            best_rank = max(best_rank, rank)
+            best_major = max(best_major, _CODE_TO_MAJOR[name])
+
+    # Fallback: if nothing matched, we’ll base everything on osVersion only
+    modernity = (best_rank / _latest_rank) if best_rank >= 0 else 0.0
+
+    # ---------- 2. installed major version ---------------------------------
+    inst_str = str(static_meta.get("osVersion", ""))
+    m = _version_re.search(inst_str)
+    installed_major = int(m.group(1)) if m else 0
+
+    # If we never identified *best_major* above, use installed_major
+    if best_major == 0:
+        best_major = installed_major
+
+    # ---------- 3. update_score --------------------------------------------
+    if best_major == 0:
+        update_score = 0.0
+    else:
+        update_score = np.clip(installed_major / best_major, 0.0, 1.0)
+
+    return np.asarray([modernity, update_score], dtype=np.float32)
+
+# Ordered list (oldest → newest) so the index is stable
+_BRANDS = [
+    "Amazon", "LeEco", "YU", "Acer", "HP", "Samsung", "BQ", "Motorola",
+    "Tesco", "Doogee", "iBall", "Asus", "Lenovo", "HTC", "LG", "Huawei",
+    "Sony", "Silent Circle", "UMI", "Tecno", "Google", "OnePlus",
+    "alcatel", "Wiko", "Nvidia", "Micromax", "ZTE", "BlackBerry"
+]
+_BRAND_TO_IDX = {b.lower(): i for i, b in enumerate(_BRANDS)}
+
+def encode_brand(static_meta: Dict[str, Any]) -> np.ndarray:
+    """
+    One-hot encode the *brand* field.
+
+    Returns
+    -------
+    np.ndarray   shape = (len(_BRANDS),)  with exactly one 1 and rest 0s.
+                 If the brand is unseen/unknown the vector is all zeros.
+    """
+    brand_raw = str(static_meta.get("brand", "")).strip().lower()
+    idx = _BRAND_TO_IDX.get(brand_raw, None)
+
+    vec = np.zeros(len(_BRANDS), dtype=np.float32)
+    if idx is not None:
+        vec[idx] = 1.0
+    return vec
+
+# ------------------------------------------------------------------
+# RAM  -------------------------------------------------------------
+# ------------------------------------------------------------------
+_MIN_GB = 0.25                # 256 MB
+_MAX_GB = 4.0                 # 4 GB (largest in dataset)
+
+# capture *both* the number and its unit so we can treat MB vs GB
+_RAM_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(gb|mb)", re.I)
+
+def encode_ram(static_meta: Dict[str, Any]) -> np.ndarray:
+    txt = str(static_meta.get("RAM", "None")).lower()
+    sizes = []
+
+    for num, unit in _RAM_RE.findall(txt):
+        val = float(num)
+        if unit.lower() == "mb":
+            val /= 1024.0          # convert MB → GB
+        sizes.append(val)
+
+    ram_gb = max(sizes) if sizes else _MIN_GB
+    ram_gb = np.clip(ram_gb, _MIN_GB, _MAX_GB)
+    ram_norm = (ram_gb - _MIN_GB) / (_MAX_GB - _MIN_GB)
+    return np.asarray([ram_norm], dtype=np.float32)
+
+
+# ------------------------------------------------------------------
+# Internal storage  -------------------------------------------------
+# ------------------------------------------------------------------
+_MIN_GB_INT = 0.5              # 512 MB
+_MAX_GB_INT = 128.0            # 128 GB (largest in dataset)
+
+_INT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(gb|mb)", re.I)
+
+def encode_internal_memory(static_meta: Dict[str, Any]) -> np.ndarray:
+    txt = str(static_meta.get("internal_memory", "None")).lower()
+    sizes = []
+
+    for num, unit in _INT_RE.findall(txt):
+        val = float(num)
+        if unit.lower() == "mb":
+            val /= 1024.0          # MB → GB
+        sizes.append(val)
+
+    mem_gb = max(sizes) if sizes else _MIN_GB_INT
+    mem_gb = np.clip(mem_gb, _MIN_GB_INT, _MAX_GB_INT)
+    mem_norm = (mem_gb - _MIN_GB_INT) / (_MAX_GB_INT - _MIN_GB_INT)
+    return np.asarray([mem_norm], dtype=np.float32)
+
+# --- constants -------------------------------------------------------------
+_MIN_MAH = 1300.0     # smallest realistic phone/tablet cell in list
+_MAX_MAH = 9600.0     # largest value seen
+_VOLTAGE = 3.7        # typical Li-Ion / Li-Po nominal voltage
+
+# patterns
+_MAH_RE = re.compile(r"(\d+(?:\.\d+)?)\s*mAh", re.I)
+_WH_RE  = re.compile(r"(\d+(?:\.\d+)?)\s*Wh",  re.I)
+
+def encode_battery(static_meta: Dict[str, Any]) -> np.ndarray:
+    """
+    Parse the *battery* field and return one normalised feature in [0,1].
+
+    • Picks the **largest** capacity mentioned (handles multiple options).  
+    • Accepts “… mAh” directly, or “… Wh” which it converts using 3.7 V.  
+    • If neither unit is present, uses `_MIN_MAH` as a safe default.
+    """
+    txt = str(static_meta.get("battery", "")).lower()
+
+    # --- 1. direct mAh values --------------------------------------------
+    mah_vals = [float(m.group(1)) for m in _MAH_RE.finditer(txt)]
+
+    # --- 2. Wh → mAh conversion ------------------------------------------
+    for m in _WH_RE.finditer(txt):
+        wh = float(m.group(1))
+        mah_vals.append((wh * 1000.0) / _VOLTAGE)
+
+    # fallback if no numbers found
+    capacity = max(mah_vals) if mah_vals else _MIN_MAH
+
+    # clip & normalise
+    capacity = np.clip(capacity, _MIN_MAH, _MAX_MAH)
+    cap_norm = (capacity - _MIN_MAH) / (_MAX_MAH - _MIN_MAH)
+
+    return np.asarray([cap_norm], dtype=np.float32)
+
+
+_CPU_MIN, _CPU_MAX = 4_000_000_000, 67_200_000_000
+_GPU_MIN, _GPU_MAX = 0, 360_000_000_000
+_THR_MIN, _THR_MAX = 72, 433
+
+def encode_int_features(static_meta: Dict[str, Any]) -> np.ndarray:
+    """Normalise **cpu_flops, gpu_flops, peak_throughput** to [0,1]^3."""
+    cpu  = float(static_meta.get("cpu_flops", _CPU_MIN))
+    gpu  = float(static_meta.get("gpu_flops", _GPU_MIN))
+    thr  = float(static_meta.get("peak_throughput", _THR_MIN))
+
+    cpu_n = (np.clip(cpu, _CPU_MIN, _CPU_MAX) - _CPU_MIN) / (_CPU_MAX - _CPU_MIN)
+    gpu_n = (np.clip(gpu, _GPU_MIN, _GPU_MAX) - _GPU_MIN) / (_GPU_MAX - _GPU_MIN)
+    thr_n = (np.clip(thr, _THR_MIN, _THR_MAX) - _THR_MIN) / (_THR_MAX - _THR_MIN)
+
+    return np.asarray([cpu_n, gpu_n, thr_n], dtype=np.float32)
+
+_cluster_file = Path(__file__).resolve().parent / "clusters.json"
+_model_to_cluster: Dict[str, int] = {}
+_cluster_ids: Dict[int, int] = {}   # original id → 0-based index
+
+try:
+    with _cluster_file.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    # make cluster-id indices compact 0..K-1
+    for idx, obj in enumerate(data):
+        cid = int(obj["id"])
+        _cluster_ids[cid] = idx
+        for model in obj["models"]:
+            _model_to_cluster[model.strip().lower()] = idx
+
+    _N_CLUSTERS = len(_cluster_ids)
+except FileNotFoundError:
+    _model_to_cluster = {}
+    _N_CLUSTERS = 0
+    print(f"[Bliss] Warning: cluster.json not found at {_cluster_file}")
+
+# ------------------------------------------------------------------
+# Model-cluster one-hot encoder
+# ------------------------------------------------------------------
+
+
+def encode_model_cluster(static_meta: Dict[str, Any]) -> np.ndarray:
+    """
+    One-hot encode the *model* string based on cluster.json.
+
+    Returns
+    -------
+    np.ndarray  shape = (_N_CLUSTERS,)  • all zeros if model not in map.
+    """
+    vec = np.zeros(_N_CLUSTERS, dtype=np.float32)
+
+    if _N_CLUSTERS == 0:
+        return vec  # graceful degrade when file missing
+
+    model_raw = str(static_meta.get("model", "")).strip().lower()
+    idx = _model_to_cluster.get(model_raw, None)
+    if idx is not None:
+        vec[idx] = 1.0
+    return vec
+
+
+
+def encode_static_metadata(static_meta: Dict[str, Any]) -> np.ndarray:
+    """
+    Aggregate all static-feature encodings into a single 1-D vector.
+
+    Order of concatenation  (→ feature index ranges stay stable):
+    1. [2 ]  encode_os_osVersion
+    2. [28]  encode_brand
+    3. [K ]  encode_model_cluster   (K = #clusters in cluster.json)
+    4. [1 ]  encode_ram
+    5. [1 ]  encode_internal_memory
+    6. [1 ]  encode_battery
+    7. [3 ]  encode_int_features    (cpu_flops, gpu_flops, throughput)
+    ----------------------------------------------------------------
+    N_total = 2 + 28 + 27 + 1 + 1 + 1 + 3 = 63
+    """
+
+    vecs = [
+        encode_os_osVersion(static_meta),          # (2,)
+        encode_brand(static_meta),                 # (28,)
+        encode_model_cluster(static_meta),         # (27,)
+        encode_ram(static_meta),                   # (1,)
+        encode_internal_memory(static_meta),       # (1,)
+        encode_battery(static_meta),               # (1,)
+        encode_int_features(static_meta)           # (3,)
+    ]
+    return np.concatenate(vecs).astype(np.float32)
+
+
+I want you to rigorously check the pipeline of the client_selection mechanism with bliss. Look for any inconsistencies in terms of python, in terms of code logic, in terms of we're not doing what I wanted us to do in the instructions. Pay as attention as you can to every little detail.
+There is also a _testing_selector class in bliss.py, but we don't really care about it, especially seeing as I don't see it getting called anywhere. This is why I left it out of this chat.
+Don't hesitate to ask any questions or for any more information if you need it for your check. I would like the code to run after you finish reviewing everything.

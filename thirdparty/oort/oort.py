@@ -94,7 +94,6 @@ class _testing_selector:
             A list of selected participants
         """
         num_of_selected = self._hoeffding_bound(dev_target, range_of_capacity, total_num_clients, confidence=0.8)
-        #selected_client_ids = numpy.random.choice(self.client_idx_list, replacement=False, size=num_of_selected*overcommit)
         return num_of_selected
 
     def select_by_category(self, request_list, max_num_clients=None, greedy_heuristic=True):
@@ -199,13 +198,13 @@ class _training_selector(object):
             elif abs(utilCurrentPacerRounds - utilLastPacerRounds) >= utilLastPacerRounds * 5:
                 self.round_threshold = max(self.args.pacer_delta, self.round_threshold - self.args.pacer_delta)
                 self.last_util_record = self.training_round - self.args.pacer_step
-                logging.debug("Training selector: Pacer changes at {} to {}".format(self.training_round, self.round_threshold))
+        #         logging.debug("Training selector: Pacer changes at {} to {}".format(self.training_round, self.round_threshold))
 
-            logging.debug("Training selector: utilLastPacerRounds {}, utilCurrentPacerRounds {} in round {}"
-                .format(utilLastPacerRounds, utilCurrentPacerRounds, self.training_round))
+        #     logging.debug("Training selector: utilLastPacerRounds {}, utilCurrentPacerRounds {} in round {}"
+        #         .format(utilLastPacerRounds, utilCurrentPacerRounds, self.training_round))
 
-        logging.info("Training selector: Pacer {}: lastExploitationUtil {}, lastExplorationUtil {}, last_util_record {}".
-                        format(self.training_round, lastExploitationUtil, lastExplorationUtil, self.last_util_record))
+        # logging.info("Training selector: Pacer {}: lastExploitationUtil {}, lastExplorationUtil {}, last_util_record {}".
+        #                 format(self.training_round, lastExploitationUtil, lastExplorationUtil, self.last_util_record))
 
     def update_client_util(self, client_id, feedbacks):
         '''
@@ -369,8 +368,8 @@ class _training_selector(object):
             _staleness = self.alpha*((cur_time-self.totalArms[client_id]['time_stamp']) - min_staleness)/float(range_staleness) #math.sqrt(0.1*math.log(cur_time)/max(1e-4, self.totalArms[client_id]['time_stamp']))
             top_k_score.append((self.totalArms[client_id], [_score, _staleness]))
 
-        logging.info("At round {}, UCB exploited {}, augment_factor {}, exploreLen {}, un-explored {}, exploration {}, round_threshold {}, sampled score is {}"
-            .format(cur_time, numOfExploited, augment_factor/max(1e-4, exploitLen), exploreLen, len(self.unexplored), self.exploration, self.round_threshold, top_k_score))
+        # logging.info("At round {}, UCB exploited {}, augment_factor {}, exploreLen {}, un-explored {}, exploration {}, round_threshold {}, sampled score is {}"
+        #     .format(cur_time, numOfExploited, augment_factor/max(1e-4, exploitLen), exploreLen, len(self.unexplored), self.exploration, self.round_threshold, top_k_score))
         # logging.info("At time {}, all rewards are {}".format(cur_time, allloss))
 
         return pickedClients

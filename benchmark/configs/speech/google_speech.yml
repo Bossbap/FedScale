@@ -33,9 +33,11 @@ setup_commands:
 # ========== Additional job configuration ========== 
 # Default parameters are specified in config_parser.py, wherein more description of the parameter can be found
 
-job_conf: 
+job_conf:
     - job_name: google_speech                   # Generate logs under this folder: log_path/job_name/time_stamp
     - log_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark # Path of log files
+    - wandb_token: c5a1a0bea7a1022889068d96b579c791dc52420e
+    - sample_mode: oort
     - task: speech
     - num_participants: 100                      # Number of participants per round, we use K=100 in our paper, large K will be much slower
     - data_set: google_speech                     # Dataset: openImg, google_speech, stackoverflow
@@ -44,7 +46,7 @@ job_conf:
     - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
     - model: resnet34                            # Models: e.g., shufflenet_v2_x2_0, mobilenet_v2, resnet34, albert-base-v2
     - gradient_policy: fed-yogi                 # {"fed-yogi", "fed-prox", "fed-avg"}, "fed-avg" by default
-    - eval_interval: 30                     # How many rounds to run a testing on the testing set
+    - eval_interval: 20                     # How many rounds to run a testing on the testing set
     - rounds: 5000                          # Number of rounds to run this training. We use 1000 in our paper, while it may converge w/ ~400 rounds
     - num_loaders: 4
     - yogi_eta: 3e-3 
@@ -55,3 +57,5 @@ job_conf:
     - test_bsz: 20
     - filter_less: 30
     - use_cuda: True
+    - pacer_delta: 2
+    

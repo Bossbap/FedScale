@@ -28,7 +28,7 @@ class YoGi:
             ) * gradient_square * torch.sign(self.v_t[idx] - gradient_square)
             yogi_learning_rate = self.eta / (torch.sqrt(self.v_t[idx]) + self.tau)
 
-            update_gradients.append(yogi_learning_rate * self.m_t[idx])
+            update_gradients.append(-yogi_learning_rate * self.m_t[idx])
 
         if len(update_gradients) == 0:
             update_gradients = gradients

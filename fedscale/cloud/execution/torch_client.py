@@ -67,11 +67,7 @@ class TorchClient(ClientBase):
         # NOTE: If one may hope to run fixed number of epochs, instead of iterations,
         # use `while self.completed_steps < conf.local_steps * len(client_data)` instead
         while self.completed_steps < conf.local_steps:
-            try:
-                self.train_step(client_data, conf, model, optimizer, criterion)
-            except Exception as ex:
-                error_type = ex
-                break
+            self.train_step(client_data, conf, model, optimizer, criterion)
 
         state_dicts = model.state_dict()
         model_param = {p: state_dicts[p].data.cpu().numpy()
@@ -80,10 +76,6 @@ class TorchClient(ClientBase):
                    'trained_size': self.completed_steps * conf.batch_size,
                    'success': self.completed_steps == conf.local_steps}
 
-        if error_type is None:
-            logging.info(f"Training of (CLIENT: {client_id}) completes, {results}")
-        else:
-            logging.info(f"Training of (CLIENT: {client_id}) failed as {error_type}")
 
         results['utility'] = math.sqrt(
             self.loss_squared) * float(trained_unique_samples)

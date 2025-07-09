@@ -241,6 +241,9 @@ fedscale/utils/models/specialized/voice_model.py
 fedscale/utils/optimizer/__init__.py
 fedscale/utils/optimizer/yogi.py
 thirdparty/__init__.py
+thirdparty/bliss/__init__.py
+thirdparty/bliss/bliss.py
+thirdparty/bliss/encode.py
 thirdparty/oort/__init__.py
 thirdparty/oort/oort.py
 thirdparty/oort/utils/__init__.py

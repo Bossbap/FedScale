@@ -61,8 +61,6 @@ parser.add_argument("--train_uniform", type=bool, default=False)
 parser.add_argument("--conf_path", type=str, default="~/dataset/")
 parser.add_argument("--overcommitment", type=float, default=1.3)
 parser.add_argument("--model_size", type=float, default=65536)
-parser.add_argument("--round_threshold", type=float, default=30)
-parser.add_argument("--round_penalty", type=float, default=2.0)
 parser.add_argument("--clip_bound", type=float, default=0.9)
 parser.add_argument("--blacklist_rounds", type=int, default=-1)
 parser.add_argument("--blacklist_max_len", type=float, default=0.3)
@@ -134,7 +132,16 @@ parser.add_argument("--pacer_step", type=int, default=20)
 parser.add_argument("--exploration_alpha", type=float, default=0.3)
 parser.add_argument("--exploration_factor", type=float, default=0.9)
 parser.add_argument("--exploration_decay", type=float, default=0.98)
-parser.add_argument("--sample_window", type=float, default=5.0)
+parser.add_argument("--sample_window", type=float, default=20.0)
+parser.add_argument("--round_threshold", type=float, default=30)
+parser.add_argument("--round_penalty", type=float, default=2.0)
+
+# for Bliss
+parser.add_argument("--number_clients_to_refresh_utility", type=int, default=300)
+parser.add_argument("--number_clients_to_predict_utility", type=int, default=300)
+parser.add_argument("--amount_clients_predict_train_set", type=int, default=500)
+parser.add_argument("--amount_clients_refresh_train_set", type=int, default=500)
+parser.add_argument("--ema_alpha", type=float, default=0.7)
 
 # for albert
 parser.add_argument(

@@ -1,0 +1,401 @@
+[
+  {
+    "id": 1,
+    "models": [
+      "Galaxy S5 Neo",
+      "Galaxy S5 Neo",
+      "Galaxy A7",
+      "Galaxy S5 Sport",
+      "I9506 Galaxy S4",
+      "I9506 Galaxy S4",
+      "I9506 Galaxy S4",
+      "I9506 Galaxy S4",
+      "Galaxy Note 3",
+      "Galaxy Note 3",
+      "Galaxy Note 3",
+      "Galaxy Note 3",
+      "Galaxy Note 3",
+      "Galaxy Note 3",
+      "I9295 Galaxy S4 Active",
+      "I9505 Galaxy S4",
+      "I9505 Galaxy S4",
+      "I9500 Galaxy S4",
+      "I9500 Galaxy S4",
+      "I9500 Galaxy S4",
+      "Galaxy S4 CDMA",
+      "Xperia Z2",
+      "Xperia Z1",
+      "Xperia Z1",
+      "Xperia Z",
+      "Xperia Z",
+      "Xperia ZL"
+    ],
+    "rank": 14
+  },
+  {
+    "id": 2,
+    "models": [
+      "Ascend Y520",
+      "Honor 3C",
+      "Ascend Mate",
+      "A102 Canvas Doodle 3",
+      "Moto G (3rd gen)",
+      "Moto G Dual SIM (2nd gen)",
+      "Moto G (2nd gen)",
+      "Moto G 4G",
+      "Moto G",
+      "Moto G",
+      "Moto G",
+      "Moto X",
+      "Moto X",
+      "Moto X",
+      "DROID Ultra",
+      "DROID Mini",
+      "XOOM MZ604",
+      "Rainbow Jam 4G",
+      "Blade Vec 4G"
+    ],
+    "rank": 22
+  },
+  {
+    "id": 3,
+    "models": [
+      "Galaxy J5 (2016)",
+      "Galaxy J7",
+      "Galaxy J7",
+      "Galaxy Alpha",
+      "Galaxy W",
+      "I9305 Galaxy S III",
+      "I9305 Galaxy S III",
+      "Galaxy Note II N7100",
+      "Galaxy Note II CDMA",
+      "Galaxy Note II CDMA",
+      "Galaxy Note II CDMA",
+      "Galaxy Note II CDMA",
+      "Galaxy S III I747",
+      "Galaxy S III I747",
+      "Galaxy S III I747",
+      "Galaxy S III CDMA",
+      "Xperia Z3 Compact",
+      "Xperia Z1 Compact",
+      "Xperia acro HD SO-03D"
+    ],
+    "rank": 9
+  },
+  {
+    "id": 4,
+    "models": [
+      "3G7803Q-900",
+      "Hudl 2",
+      "VOYAGER2 DG310",
+      "Valencia2_Y100pro"
+    ],
+    "rank": 25
+  },
+  {
+    "id": 5,
+    "models": [
+      "Fire HDX 8.9 (2014)",
+      "Le S3"
+    ],
+    "rank": 11
+  },
+  {
+    "id": 6,
+    "models": [
+      "Google Nexus 7",
+      "IdeaTab A3000",
+      "IdeaTab A3000"
+    ],
+    "rank": 10
+  },
+  {
+    "id": 7,
+    "models": [
+      "Iconia Smart",
+      "Fire HD 7",
+      "TouchPad",
+      "Yuphoria"
+    ],
+    "rank": 12
+  },
+  {
+    "id": 8,
+    "models": [
+      "Butterfly S",
+      "One",
+      "One",
+      "Stylo 3 Plus",
+      "G4",
+      "Nexus 5",
+      "G2"
+    ],
+    "rank": 7
+  },
+  {
+    "id": 9,
+    "models": [
+      "G3"
+    ],
+    "rank": 15
+  },
+  {
+    "id": 10,
+    "models": [
+      "Mate 9",
+      "DROID Turbo",
+      "Nexus 6"
+    ],
+    "rank": 3
+  },
+  {
+    "id": 11,
+    "models": [
+      "Zenfone 2 ZE551ML",
+      "One M9",
+      "One (M8) dual sim",
+      "One (M8) CDMA",
+      "One (M8)",
+      "One M8 Prime"
+    ],
+    "rank": 8
+  },
+  {
+    "id": 12,
+    "models": [
+      "Galaxy Grand Prime Plus",
+      "Galaxy Xcover 3 G389F",
+      "Galaxy S4 mini I9195I",
+      "Galaxy J5",
+      "Galaxy J5",
+      "Galaxy Xcover 3",
+      "Galaxy Core Prime",
+      "Galaxy A3",
+      "Galaxy S Duos 3",
+      "Galaxy S5 mini",
+      "I8200 Galaxy S III mini VE",
+      "I8200 Galaxy S III mini VE",
+      "Galaxy S Duos 2 S7582",
+      "Galaxy Ace 3",
+      "I9190 Galaxy S4 mini",
+      "I9190 Galaxy S4 mini",
+      "I9190 Galaxy S4 mini",
+      "I9190 Galaxy S4 mini",
+      "I9190 Galaxy S4 mini",
+      "S7710 Galaxy Xcover 2",
+      "I9105 Galaxy S II Plus",
+      "Galaxy Grand I9082",
+      "I8190 Galaxy S III mini",
+      "I8190 Galaxy S III mini",
+      "I9300 Galaxy S III",
+      "I9300 Galaxy S III",
+      "I9300 Galaxy S III",
+      "Galaxy Ace 2 I8160",
+      "I9070 Galaxy S Advance",
+      "Galaxy S II Skyrocket i727",
+      "Galaxy Nexus I9250",
+      "I9100G Galaxy S II",
+      "Galaxy S II I777",
+      "I9100 Galaxy S II",
+      "I997 Infuse 4G",
+      "I9000 Galaxy S",
+      "I9000 Galaxy S",
+      "Xperia go",
+      "Tablet S"
+    ],
+    "rank": 16
+  },
+  {
+    "id": 13,
+    "models": [
+      "Galaxy Tab S2 9.7",
+      "Galaxy Tab S 8.4 LTE",
+      "Galaxy Tab S 8.4",
+      "Galaxy Tab Pro 8.4 3G/LTE",
+      "Xperia Z2 Tablet LTE",
+      "Xperia Z2 Tablet Wi-Fi",
+      "Xperia Tablet Z LTE",
+      "Xperia Tablet Z Wi-Fi"
+    ],
+    "rank": 1
+  },
+  {
+    "id": 14,
+    "models": [
+      "Galaxy Note 10.1 N8000",
+      "Galaxy Note 10.1 N8000",
+      "Galaxy Note 10.1 N8000",
+      "P7500 Galaxy Tab 10.1 3G",
+      "Galaxy Tab 10.1 P7510",
+      "Galaxy Tab 8.9 P7300"
+    ],
+    "rank": 13
+  },
+  {
+    "id": 15,
+    "models": [
+      "Blackphone 2",
+      "UMI X3"
+    ],
+    "rank": 19
+  },
+  {
+    "id": 16,
+    "models": [
+      "H7",
+      "TECNO F5"
+    ],
+    "rank": 23
+  },
+  {
+    "id": 17,
+    "models": [
+      "Galaxy K zoom"
+    ],
+    "rank": 20
+  },
+  {
+    "id": 18,
+    "models": [
+      "Galaxy Note5",
+      "Galaxy S6 edge+",
+      "Galaxy S6 (USA)",
+      "Galaxy S6 (USA)",
+      "Galaxy S6 edge",
+      "Galaxy S6 edge",
+      "Galaxy S6",
+      "Galaxy S6",
+      "Galaxy Note Edge",
+      "Galaxy Note 4 Duos",
+      "Galaxy Note 4 (USA)",
+      "Galaxy Note 4",
+      "Galaxy Note 4",
+      "Galaxy Note 4"
+    ],
+    "rank": 3
+  },
+  {
+    "id": 19,
+    "models": [
+      "Nexus 6P"
+    ],
+    "rank": 26
+  },
+  {
+    "id": 20,
+    "models": [
+      "One"
+    ],
+    "rank": 21
+  },
+  {
+    "id": 21,
+    "models": [
+      "Priv",
+      "Pixel",
+      "2",
+      "Galaxy S7",
+      "Galaxy S5 LTE-A G906S",
+      "Galaxy S5 (USA)",
+      "Galaxy S5 (USA)",
+      "Galaxy S5",
+      "Galaxy S5",
+      "Galaxy S5",
+      "Galaxy S5",
+      "Galaxy S5"
+    ],
+    "rank": 6
+  },
+  {
+    "id": 22,
+    "models": [
+      "Aquaris E5s"
+    ],
+    "rank": 27
+  },
+  {
+    "id": 23,
+    "models": [
+      "Zenfone 2 Laser ZE500KL",
+      "Zenfone 5 A500CG",
+      "Desire 526",
+      "Desire 820",
+      "One X",
+      "One S",
+      "DROID Incredible 2",
+      "X5",
+      "L90 D405",
+      "G Flex",
+      "Nexus 4 E960",
+      "Optimus L9 P769",
+      "Optimus G E970",
+      "Motion 4G MS770",
+      "Jil Sander Mobile",
+      "Esteem MS910",
+      "Thrill 4G P925"
+    ],
+    "rank": 17
+  },
+  {
+    "id": 24,
+    "models": [
+      "Galaxy Tab S 10.5 LTE",
+      "Galaxy Tab S 10.5",
+      "Galaxy Tab Pro 12.2",
+      "Galaxy Note 10.1 (2014 Edition)",
+      "Galaxy Note 10.1 (2014 Edition)",
+      "Galaxy Note 10.1 (2014 Edition)",
+      "Galaxy Note 10.1 (2014 Edition)",
+      "Galaxy Note 10.1 (2014 Edition)",
+      "Galaxy Note 10.1 (2014 Edition)",
+      "Google Nexus 10 P8110"
+    ],
+    "rank": 2
+  },
+  {
+    "id": 25,
+    "models": [
+      "Galaxy Tab 4 10.1 (2015)",
+      "Galaxy Tab 4 7.0",
+      "Galaxy Tab 4 7.0",
+      "Galaxy Tab 4 8.0 LTE",
+      "Galaxy Tab 4 10.1",
+      "Galaxy Tab 4 10.1 LTE",
+      "Galaxy Tab 3 8.0",
+      "Galaxy Tab 3 10.1 P5220",
+      "Galaxy Tab 3 10.1 P5210",
+      "Galaxy Tab 3 7.0 WiFi",
+      "Galaxy Tab 3 7.0",
+      "Galaxy Tab 3 7.0",
+      "Galaxy Note 8.0 Wi-Fi",
+      "Galaxy Tab 2 10.1 P5110",
+      "Galaxy Tab 2 10.1 P5100",
+      "Galaxy Tab 2 7.0 P3100"
+    ],
+    "rank": 18
+  },
+  {
+    "id": 26,
+    "models": [
+      "One Touch Pixi",
+      "Ascend Y221",
+      "Ascend Y221",
+      "MediaPad 7 Vogue",
+      "MediaPad 7 Lite",
+      "Lenny2"
+    ],
+    "rank": 24
+  },
+  {
+    "id": 27,
+    "models": [
+      "Memo Pad FHD10",
+      "Yoga Tablet 2 10.1",
+      "Yoga Tablet 10 HD+",
+      "G Pad 8.3 LTE",
+      "G Pad 8.3",
+      "Shield"
+    ],
+    "rank": 5
+  }
+]

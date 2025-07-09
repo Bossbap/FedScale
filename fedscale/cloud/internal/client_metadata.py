@@ -26,7 +26,8 @@ class ClientMetadata:
         batteryLevel: list[int],
         # activity traces
         active: list[int],
-        inactive: list[int]
+        inactive: list[int],
+        peak_throughput
     ):
         """
         :param host_id:   ID of the executor handling this client
@@ -51,6 +52,7 @@ class ClientMetadata:
         # Network traces (livelab)
         self.timestamps_livelab = timestamps_livelab
         self.rate = rate
+        self.peak_throughput = peak_throughput
 
         # Compute traces (carat)
         self.timestamps_carat = timestamps_carat
@@ -118,8 +120,8 @@ class ClientMetadata:
 
 
     def bandwidth(self, t):
-        rate = self._lookup(self.timestamps_livelab, self.rate, t)  # Mb/s
-        return (rate / 8.0)  # MB/s
+        rate = self._lookup(self.timestamps_livelab, self.rate, t)
+        return self.peak_throughput * rate/54  # Mb/s
 
     def compute_speed(self, t: float) -> float:
         """
@@ -223,6 +225,7 @@ class ClientMetadata:
         batch_size: int,
         local_steps: int,
         model_size: int,
+        model_amount_parameters: int,
         augmentation_factor: float = 3.0,
         reduction_factor: float = 0.5
     ) -> float:
@@ -233,7 +236,8 @@ class ClientMetadata:
             cur_time: simulation time (s) when download starts.
             batch_size: local batch size.
             local_steps: number of local training iterations.
-            model_size: number of model parameters.
+            model_size: size of the model (Mb)
+            model_amount_parameters: number of model parameters.
             augmentation_factor: multiplies forward-flop cost to include backward.
             reduction_factor: upload speed is bandwidth * this factor.
 
@@ -247,14 +251,10 @@ class ClientMetadata:
         # Noise
         self._round_noise = np.random.lognormal(mean=0.0, sigma=0.25)
 
-        # 1) Convert model size to MB (float16 = 2 bytes/param)
-        total_bytes = model_size * 2
-        model_mb = total_bytes / 1e6
-
         # 2) DOWNLOAD phase
         download_end = self._simulate_data_phase(
             start_time=cur_time,
-            total_work=model_mb,
+            total_work=model_size,
             timestamps=self.timestamps_livelab,
             rate_fn=self.bandwidth,
             window=WINDOW,
@@ -262,8 +262,8 @@ class ClientMetadata:
         )
 
         # 3) COMPUTE phase
-        # total FLOPs = augmentation_factor × model_size × batch_size × local_steps
-        total_ops = augmentation_factor * model_size * batch_size * local_steps
+        # total FLOPs = augmentation_factor × model_amount_parameters × batch_size × local_steps
+        total_ops = augmentation_factor * model_amount_parameters * batch_size * local_steps
         compute_end = self._simulate_data_phase(
             start_time=download_end,
             total_work=total_ops,
@@ -276,7 +276,7 @@ class ClientMetadata:
         # 4) UPLOAD phase
         upload_end = self._simulate_data_phase(
             start_time=compute_end,
-            total_work=model_mb * reduction_factor,
+            total_work=model_size / reduction_factor, # Makes the upload phase twice as long
             timestamps=self.timestamps_livelab,
             rate_fn=self.bandwidth,
             window=WINDOW,
@@ -291,7 +291,6 @@ class ClientMetadata:
         batch_size: int,
         local_steps: int,
         model_size: int,
-        augmentation_factor: float = 3.0,
         reduction_factor: float = 0.5,
         mean_seconds_per_sample: float = 0.005,
         tail_skew: float = 0.6,
@@ -309,14 +308,10 @@ class ClientMetadata:
         Returns the simulated time when upload completes.
         """
 
-        # 1) Convert model_size to MB (float16 = 2 bytes/param)
-        total_bytes = model_size * 2
-        model_mb = total_bytes / 1e6
-
         # 2) DOWNLOAD phase (same as before)
         download_end = self._simulate_data_phase(
             start_time=cur_time,
-            total_work=model_mb,
+            total_work=model_size,
             timestamps=self.timestamps_livelab,
             rate_fn=self.bandwidth,
             window=48 * 3600,
@@ -331,7 +326,7 @@ class ClientMetadata:
         # 4) UPLOAD phase (same as before, with reduction)
         upload_end = self._simulate_data_phase(
             start_time=compute_end,
-            total_work=model_mb * reduction_factor,
+            total_work=model_mb / reduction_factor,
             timestamps=self.timestamps_livelab,
             rate_fn=self.bandwidth,
             window=48 * 3600,

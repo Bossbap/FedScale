@@ -2,6 +2,8 @@ import logging
 import pickle
 from random import Random
 from typing import List
+import numpy as np
+import math
 
 from fedscale.cloud.internal.client_metadata import ClientMetadata
 
@@ -21,7 +23,10 @@ class ClientManager:
             from thirdparty.oort.oort import create_training_selector
             self.ucb_sampler = create_training_selector(args=args)
 
-        # if args.sample_mode == "ours":
+        if self.mode == 'bliss':
+            from thirdparty.bliss.bliss import create_training_selector
+            self.bliss_sampler = create_training_selector(args=args)
+
 
         self.feasibleClients = []
         self.rng = Random()
@@ -61,6 +66,7 @@ class ClientManager:
             batteryLevel=cd['batteryLevel'],
             active=cd['active'],
             inactive=cd['inactive'],
+            peak_throughput=cd['peak_throughput'],
         )
 
         # remove clients
@@ -73,6 +79,23 @@ class ClientManager:
                              'duration': duration,
                              }
                 self.ucb_sampler.register_client(client_id, feedbacks=feedbacks)
+            elif self.mode == "bliss":
+                feedbacks = {
+                    'reward': min(size, self.args.local_steps * self.args.batch_size),
+                    'metadata': {
+                        'osVersion': cd['osVersion'],
+                        'model': cd['model'],
+                        'brand': cd['brand'],
+                        'os': cd['OS'],
+                        'cpu_flops': cd['CPU_FLOPS'],
+                        'gpu_flops': cd['GPU_FLOPS'],
+                        'internal_memory': cd['internal_memory'],
+                        'RAM': cd['RAM'],
+                        'peak_throughput': cd['peak_throughput'],
+                        'battery': cd['battery']
+                    }
+                }
+                self.bliss_sampler.register_client(client_id, feedbacks)
         else:
             del self.client_metadata[client_id]
 
@@ -88,19 +111,19 @@ class ClientManager:
     def registerDuration(self, client_id, duration):
         if self.mode == "oort":
             self.ucb_sampler.update_duration(client_id, duration)
-        # elif self.mode == "ours":
 
         meta = self.client_metadata.get(client_id)
         if meta is not None:
             meta.last_duration = duration
 
-    def get_completion_time(self, client_id, cur_time, batch_size, local_steps, model_size):
+    def get_completion_time(self, client_id, cur_time, batch_size, local_steps, model_size, model_amount_parameters):
 
         client_completion_time =  self.client_metadata[client_id].get_completion_time(
             cur_time=cur_time,
             batch_size=batch_size,
             local_steps=local_steps,
-            model_size=model_size
+            model_size=model_size,
+            model_amount_parameters=model_amount_parameters
         )
 
         return client_completion_time
@@ -110,17 +133,16 @@ class ClientManager:
         uniqueId = self.getUniqueId(host_id, client_id)
         self.client_metadata[uniqueId].speed = speed
 
-    def registerScore(self, client_id, reward, auxi=1.0, time_stamp=0, duration=1., success=True):
-        self.register_feedback(client_id, reward, auxi=auxi, time_stamp=time_stamp, duration=duration, success=success)
+    def registerScore(self, client_id, reward, time_stamp=0, duration=1., success=True):
+        self.register_feedback(client_id, reward, time_stamp=time_stamp, duration=duration, success=success)
 
-    def register_feedback(self, client_id: int, reward: float, auxi: float = 1.0, time_stamp: float = 0,
+    def register_feedback(self, client_id: int, reward: float, time_stamp: float = 0,
                           duration: float = 1., success: bool = True) -> None:
         """Collect client execution feedbacks of last round.
 
         Args:
             client_id (int): client Id.
             reward (float): execution utilities (processed feedbacks).
-            auxi (float): unprocessed feedbacks.
             time_stamp (float): current wall clock time.
             duration (float): system execution duration.
             success (bool): whether this client runs successfully.
@@ -136,6 +158,13 @@ class ClientManager:
             }
 
             self.ucb_sampler.update_client_util(client_id, feedbacks=feedbacks)
+
+        elif self.mode == "bliss":
+            feedbacks = {
+                'reward': reward if success else 0,
+                'success': success
+            }
+            self.bliss_sampler.update_client_metadata_post_training(client_id, feedbacks)
 
     def registerClientScore(self, client_id, reward):
         self.client_metadata[self.getUniqueId(0, client_id)].register_reward(reward)
@@ -207,6 +236,138 @@ class ClientManager:
     def isClientActive(self, client_id, cur_time):
         return self.client_metadata[client_id].is_active(cur_time)
 
+    @staticmethod
+    def extract_last5_windows(
+            norm_t: float,
+            timestamps_livelab: np.ndarray,
+            rate: np.ndarray,
+            timestamps_carat: np.ndarray,
+            availability: np.ndarray,
+            batteryLevel: np.ndarray,
+            active,
+            inactive
+        ):
+        """
+        norm_t               -- current time in [0, 48*3600)
+        timestamps_livelab   -- 1-D np.array (ascending, wrapped @ 48 h)
+        rate                 -- 1-D np.array aligned with timestamps_livelab
+        timestamps_carat     -- 1-D np.array (ascending, wrapped @ 48 h)
+        availability         -- 1-D np.array aligned with timestamps_carat
+        batteryLevel         -- 1-D np.array aligned with timestamps_carat
+        active               -- array defining client activity intervals
+        inactive             -- array defining client inactivity intervals
+        --------------------------------------------------------------------
+        returns  rates[5], avail[5], battLvl[5]  (newest at index 4)
+        """
+
+        def _prev_index(idx, n):
+            """Circular index stepping backwards once in a list of length n."""
+            return (idx - 1) % n
+        
+        def is_active(active, inactive, cur_time):
+            """
+            Determines whether the client is active at the given simulation time.
+
+            Args:
+                cur_time (int or float): Current simulation time in seconds.
+
+            Returns:
+                bool: True if client is active, False otherwise.
+            """
+            T = 48 * 3600
+            t = cur_time % T
+
+            # Merge the two sorted lists, tag each timestamp with the phase it *starts*
+            boundaries = sorted(
+                [(ts, 'a') for ts in active] +
+                [(ts, 'i') for ts in inactive]
+            )
+
+            # Initial phase
+            phase = 'a' if (active and active[0] == 0) else 'i'
+
+            # Walk through boundaries and flip the phase whenever we pass one
+            for ts, _ in boundaries[1:]:  # skip the initial 0 entry
+                if t < ts:
+                    break
+                phase = 'i' if phase == 'a' else 'a'
+
+            return phase == 'a'
+
+        def _fill_series(ts, vals, active, inactive):
+            """internal: build one 5-value history list for a single series"""
+            n = len(ts)
+
+            # ----- find latest index <= norm_t -----
+            if norm_t < ts[0]:
+                idx = n - 1                       # wrap around
+            else:
+                idx = np.searchsorted(ts, norm_t, side='right') - 1
+
+            out = np.empty(5, dtype=vals.dtype)
+            out[4] = vals[idx]                   # most recent observation
+
+            last_good = out[4]                   # last value actually kept
+
+            # walk four more steps backwards
+            for k in range(3, -1, -1):           # fill slots 3,2,1,0
+                prev_idx = _prev_index(idx, n)
+                t_new   = ts[prev_idx]
+                t_old   = ts[idx]
+
+                # mid-point to test activity
+                mid_t = (t_old + t_new) / 2.0
+                # wrap midpoint if we crossed 0 on the circular time line
+                if t_old < t_new:                # crossed 0 boundary
+                    mid_t = (mid_t + 24*3600) % (48*3600)
+
+                if is_active(active, inactive, mid_t):          # OK – keep real value
+                    last_good = vals[prev_idx]
+                # else: keep last_good (i.e. duplicate)
+
+                out[k] = last_good
+                idx = prev_idx                   # move the cursor
+
+            return out
+
+        rates          = _fill_series(timestamps_livelab, rate, active, inactive)
+        availabilities = _fill_series(timestamps_carat, availability, active, inactive)
+        batteryLevels  = _fill_series(timestamps_carat, batteryLevel, active, inactive)
+
+        return rates, availabilities, batteryLevels
+
+    def send_bliss_metadata(self, clients: list[int], cur_time, update_fn):
+
+        for client_id in clients:
+            client_metadata = self.client_metadata[client_id]
+
+            timestamps_livelab = client_metadata.timestamps_livelab
+            rate = client_metadata.rate
+
+            timestamps_carat = client_metadata.timestamps_carat
+            availability = client_metadata.availability
+            batteryLevel = client_metadata.batteryLevel
+
+            active = client_metadata.active
+            inactive = client_metadata.inactive
+
+            norm_t = cur_time % (48 * 3600)
+
+            rates, availabilities, batteryLevels = self.extract_last5_windows(norm_t, timestamps_livelab, rate, timestamps_carat, availability, batteryLevel, active, inactive)
+
+            update_fn(
+                    {
+                        'client_id': client_id,
+                        'dynamic_metadata':
+                        {
+                            'rates': rates,
+                            'availabilities': availabilities,
+                            'batteryLevels': batteryLevels
+                        }
+                    }
+                )
+
+
     def select_participants(self, num_of_clients: int, cur_time: float = 0) -> List[int]:
         """Select participating clients for current execution task.
 
@@ -231,7 +392,19 @@ class ClientManager:
         if self.mode == "oort" and self.count > 1:
             pickled_clients = self.ucb_sampler.select_participant(
                 num_of_clients, feasible_clients=clients_online_set)
-        # elif self.mode == "ours":
+            
+        elif self.mode == "bliss":
+
+            clients_to_predict_utility = self.bliss_sampler.request_clients_to_predict_utility(clients_online)
+            clients_to_refresh_utility = self.bliss_sampler.request_clients_to_refresh_utility(clients_online)
+
+            self.send_bliss_metadata(clients_to_predict_utility, cur_time, self.bliss_sampler.send_clients_to_predict)
+            self.send_bliss_metadata(clients_to_refresh_utility, cur_time, self.bliss_sampler.send_clients_to_refresh)
+
+            pickled_clients = self.bliss_sampler.select_participant(num_of_clients)
+
+            self.send_bliss_metadata(pickled_clients, cur_time, self.bliss_sampler.update_client_metadata_pre_training)
+
         else:
             self.rng.shuffle(clients_online)
             client_len = min(num_of_clients, len(clients_online))
@@ -245,15 +418,8 @@ class ClientManager:
     def getAllMetrics(self):
         if self.mode == "oort":
             return self.ucb_sampler.getAllMetrics()
-        return {}
+        elif self.mode == "bliss":
+            return self.bliss_sampler.getAllMetrics()
 
     def getDataInfo(self):
         return {'total_feasible_clients': len(self.feasibleClients), 'total_num_samples': self.feasible_samples}
-
-    def getClientReward(self, client_id):
-        return self.ucb_sampler.get_client_reward(client_id)
-
-    def get_median_reward(self):
-        if self.mode == 'oort':
-            return self.ucb_sampler.get_median_reward()
-        return 0.
