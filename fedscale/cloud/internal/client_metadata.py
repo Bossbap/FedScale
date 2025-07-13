@@ -50,14 +50,14 @@ class ClientMetadata:
         self.gpu_flops = gpu_flops
 
         # Network traces (livelab)
-        self.timestamps_livelab = timestamps_livelab
-        self.rate = rate
+        self.timestamps_livelab = np.asarray(timestamps_livelab, dtype=np.float32)
+        self.rate = np.asarray(rate, dtype=np.float32)
         self.peak_throughput = peak_throughput
 
         # Compute traces (carat)
-        self.timestamps_carat = timestamps_carat
-        self.availability = availability
-        self.batteryLevel = batteryLevel
+        self.timestamps_carat = np.asarray(timestamps_carat, dtype=np.float32)
+        self.availability = np.asarray(availability, dtype=np.float32)
+        self.batteryLevel = np.asarray(batteryLevel, dtype=np.float32)
 
         # activity intervals
         self.active = active

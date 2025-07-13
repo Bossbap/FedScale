@@ -2,15 +2,16 @@
 
 # ========== Cluster configuration ========== 
 # ip address of the parameter server (need 1 GPU process)
-ps_ip: 129.104.254.52
+ps_ip: 129.104.253.46
 
 # ip address of each worker:# of available gpus process on each gpu in this node
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips:
-    - 129.104.253.44:[4]
-    - 129.104.253.50:[4]
-    - 129.104.253.36:[4]
+    - 129.104.253.46:[3]
+    - 129.104.254.52:[4]
+    - 129.104.252.53:[4]
+    - 129.104.252.56:[4]
     - 129.104.252.45:[4]
 
 exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
@@ -34,28 +35,37 @@ setup_commands:
 job_conf: 
     - wandb_token: c5a1a0bea7a1022889068d96b579c791dc52420e
     - job_name: femnist                   # Generate logs under this folder: log_path/job_name/time_stamp
+    - num_classes: 62
     - log_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark # Path of log files
-    - num_participants: 100                  # Number of participants per round, we use K=100 in our paper, large K will be much slower
     - data_set: femnist                     # Dataset: openImg, google_speech, stackoverflow
     - data_dir: /Data/baptiste.geisenberger/Data/femnist    # Path of the dataset
     - data_map_file: /Data/baptiste.geisenberger/Data/femnist/client_data_mapping/train.csv              # Allocation of data to each client, turn to iid setting if not provided
     - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
+    - use_cuda: True
+    - num_loaders: 2
+
     - model: resnet18             # NOTE: Please refer to our model zoo README and use models for these small image (e.g., 32x32x3) inputs
     # - gradient_policy: fed-yogi
+
+    - num_participants: 100                 # Number of participants per round, we use K=100 in our paper, large K will be much slower
     - eval_interval: 10                     # How many rounds to run a testing on the testing set
     - rounds: 1000                          # Number of rounds to run this training. We use 1000 in our paper, while it may converge w/ ~400 rounds
-    - filter_less: 21                       # Remove clients w/ less than 21 samples
-    - num_loaders: 2
+    - filter_less: 32                       # Remove clients w/ less than 21 samples
     - local_steps: 30
-    - learning_rate: 0.03
-    - batch_size: 20
-    - test_bsz: 20
-    - use_cuda: True
+    - learning_rate: 0.01
+    - decay_factor: 0.95
+    - decay_round: 10
+    - batch_size: 32
+    - weight_decay: 1e-4
 
     - sample_mode: oort
-    - pacer_delta: 30
-    - pacer_step: 30
-    - exploration_alpha: 0.1
+    - pacer_delta: 10
+    - pacer_step: 20
+    - exploration_alpha: 0.3
     - exploration_factor: 0.9
     - exploration_decay: 0.98
-    - sample_window: 30
+    - sample_window: 20 
+    - round_penalty: 2.0
+    - round_threshold: 10
+    - blacklist_rounds: -1
+    - exploration_min: 0.1

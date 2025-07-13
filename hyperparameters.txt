@@ -1,1 +1,36 @@
-round_penalty =
+round_penalty = 2.0 Set = 0 to disable the “Sys” component (used for ablation in §7.2.2)
+pacer_delta = 5 code default; openImage = 10; StackOverflow = 0.3 - Drives the pacing window; 0 = “w/o Pacer” ablation
+pacer_step = 20 - Step-size for adjusting the pacing window
+exploration_alpha = 0.3 - Controls ε-greedy exploration of new clients
+exploration_factor = 0.9 - Controls ε-greedy exploration of new clients
+exploration_decay = 0.98 default, 0.95 for Oort - Controls ε-greedy exploration of new clients
+exploration_min = 0.2; StackOverflow = 0.4 - Minimum exploration fraction
+sample_window = 20 default, 5.0 in Oort - multiplier that sets how wide Oort looks when it is exploring brand-new (so-far-untried) clients.
+round_threshold = 30 default, 10 in Oort - percentile of duration that sets target duration and penalises stragglers
+blacklist_rounds = -1, 10 in paper max-times-a-client-may-be-picked before we temporarily stop calling it.
+clip_bound = 0.9 - sets the quantile used to cap (“clip”) very large rewards so outliers don’t skew the sampler.
+cut_off_util = 0.05 - Expands/ contracts the set of top-scoring clients from which the final exploit subset is randomly drawn. It controls how wide the “top clients” window is after scores are sorted. Smaller values (e.g. 0.8) widen the pool; values > 1 narrow it.
+
+num_participants = 100 default, otherwise 20-400
+rounds = 1000 - 500 for paper runs
+batch_size = 30 - 32 in paper (16 for speech recognition)
+upload_epoch = 20
+eval_interval = 5-20
+clock_factor = 2.5
+
+CV (OpenImage, ShuffleNet-v2-x2.0 + YoGi)
+learning_rate = 0.04
+yogi_eta = 5e-3
+yogi_beta = 0.999
+batch_size = 30
+
+NLP (StackOverflow, ALBERT)
+learning_rate = 4e-5
+min_learning_rate = 2e-5
+test_bsz = 32
+pacer_delta = 0.3
+
+Optimizer defaults (all tasks)
+weight_decay = 0
+adam_epsilon = 1e-8
+max_grad_norm = 1.0

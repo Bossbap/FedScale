@@ -13,7 +13,6 @@ import grpc
 import numpy as np
 import torch
 import wandb
-from torch.utils.tensorboard import SummaryWriter
 
 import fedscale.cloud.channels.job_api_pb2_grpc as job_api_pb2_grpc
 import fedscale.cloud.logger.aggregator_logging as logger
@@ -53,7 +52,6 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
         self.client_manager = self.init_client_manager(args=args)
 
         # ======== model and data ========
-        self.model_wrapper = None
         self.model_in_update = 0
         self.update_lock = threading.Lock()
         # all weights including bias/#_batch_tracked (e.g., state_dict)
@@ -109,7 +107,6 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             "task": args.task,
             "perf": collections.OrderedDict(),
         }
-        self.log_writer = SummaryWriter(log_dir=logger.logDir)
         if args.wandb_token != "":
             os.environ["WANDB_API_KEY"] = args.wandb_token
             self.wandb = wandb
@@ -121,6 +118,9 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
                 )
                 self.wandb.define_metric("Agg/*",   step_metric="round")
                 self.wandb.define_metric("AggWC/*", step_metric="clock")
+                self.wandb.define_metric("round", hidden=True)
+                self.wandb.define_metric("clock", hidden=True)
+
                 self.wandb.config.update(
                     {
                         "num_participants": args.num_participants,
@@ -584,7 +584,6 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             + f"{len(self.sampled_participants)}, Succeed participants: {len(self.stats_util_accumulator)}, Training loss: {avg_loss}"
         )
 
-        # dump round completion information to tensorboard
         if len(self.loss_accumulator):
             self.log_train_result(avg_loss)
 
@@ -635,17 +634,6 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             self.broadcast_aggregator_events(commons.START_ROUND)
 
     def log_train_result(self, avg_loss):
-        """Log training result on TensorBoard and optionally WanDB"""
-        self.log_writer.add_scalar("Train/round_to_loss", avg_loss, self.round)
-        self.log_writer.add_scalar(
-            "Train/time_to_train_loss (min)", avg_loss, self.global_virtual_clock / 60.0
-        )
-        self.log_writer.add_scalar(
-            "Train/round_duration (min)", self.round_duration / 60.0, self.round
-        )
-        self.log_writer.add_histogram(
-            "Train/client_duration (min)", self.flatten_client_duration, self.round
-        )
 
         if self.wandb != None:
             self.wandb.log(
@@ -659,38 +647,27 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             )
 
     def log_test_result(self):
-        # TensorBoard
-        self.log_writer.add_scalar("Test/round_to_loss",
-                                self.testing_history["perf"][self.round]["loss"],
-                                self.round)
-        self.log_writer.add_scalar("Test/round_to_accuracy",
-                                self.testing_history["perf"][self.round]["top_1"],
-                                self.round)
-        self.log_writer.add_scalar("Test/time_to_test_loss (min)",
-                                self.testing_history["perf"][self.round]["loss"],
-                                self.global_virtual_clock / 60.0)
-        self.log_writer.add_scalar("Test/time_to_test_accuracy (min)",
-                                self.testing_history["perf"][self.round]["top_1"],
-                                self.global_virtual_clock / 60.0)
+        perf   = self.testing_history["perf"][self.round]
+        top1   = perf["top_1"]
+        top5   = perf.get("top_5", 0.0)
+        loss   = perf["loss"]
+        clock  = perf["clock"]
 
-        # W&B
-        if self.wandb is not None:
-            perf = self.testing_history["perf"][self.round]
+        # ──  WandB: round-based curves  ─────────────────────────────
+        self.wandb.log({
+            "round":       self.round,     # <- provides the x-axis
+            "Agg/top1":    top1,
+            "Agg/top5":    top5,
+            "Agg/loss":    loss,
+        })
 
-            # round-based curves
-            self.wandb.log({
-                "Agg/top1": perf["top_1"],
-                "Agg/top5": perf.get("top_5", 0.0),
-                "Agg/loss": perf["loss"],
-            }, step=self.round)
-
-            # wall-clock curves (virtual seconds)
-            self.wandb.log({
-                "clock": perf["clock"],            # x-axis value
-                "AggWC/top1": perf["top_1"],
-                "AggWC/top5": perf.get("top_5", 0.0),
-                "AggWC/loss": perf["loss"],
-            })
+        # ──  WandB: wall-clock curves  ─────────────────────────────
+        self.wandb.log({
+            "clock":       clock,          # <- provides the x-axis (sec)
+            "AggWC/top1":  top1,
+            "AggWC/top5":  top5,
+            "AggWC/loss":  loss,
+        })
 
     def save_model(self):
         """Save model to the wandb server if enabled"""
@@ -751,9 +728,8 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
 
             self.save_model()
 
-            if len(self.loss_accumulator):
-                logging.info("logging test result")
-                self.log_test_result()
+            logging.info("logging test result")
+            self.log_test_result()
 
             self.broadcast_events_queue.append(commons.START_ROUND)
 

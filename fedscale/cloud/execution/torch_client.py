@@ -46,7 +46,7 @@ class TorchClient(ClientBase):
         :return: training results
         """
         client_id = conf.client_id
-        logging.info(f"Start to train (CLIENT: {client_id}), dataset_size={len(client_data.dataset)}")
+        # logging.info(f"Start to train (CLIENT: {client_id}), dataset_size={len(client_data.dataset)}")
         tokenizer = conf.tokenizer
 
         model = model.to(device=self.device)

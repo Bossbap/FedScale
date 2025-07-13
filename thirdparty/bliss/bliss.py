@@ -16,6 +16,7 @@ import logging
 import random
 from collections import deque
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+import pprint
 
 import numpy as np
 
@@ -24,6 +25,7 @@ repo_root = pathlib.Path(__file__).resolve().parents[2]   # adjust depth if need
 sys.path.append(str(repo_root))
 
 from thirdparty.bliss.encode import encode_static_metadata
+from .regressor import Regressor
 
 # -----------------------------------------------------------------------------
 # Public factory helpers – FedScale expects these names
@@ -65,7 +67,10 @@ class _training_selector:
         self.clients_to_predict = []
         self.clients_to_refresh = []
 
-        # Buffers for (Δm, Δu) pairs used to train gθ
+        self.predict_model = Regressor(args.predict_model, args.predict_hyperparameters)
+        self.refresh_model = Regressor(args.refresh_model, args.refresh_hyperparameters)
+
+        # Buffers for (Δm, Δu) pairs used to train gθ        
         self._drift_X: deque[np.ndarray] = deque(maxlen=self.amount_clients_refresh_train_set)
         self._drift_y: deque[float] = deque(maxlen=self.amount_clients_predict_train_set)
         self._g_w: Optional[np.ndarray] = None  # weights for gθ
@@ -204,11 +209,11 @@ class _training_selector:
 
             dyn_feat = np.concatenate([rate_vec, avail_vec, batt_vec])   # (15,)
 
-            stat_feat = encode_static_metadata(rec["static_metadata"])   # (S,)
+            stat_feat = encode_static_metadata(rec["static_metadata"])   # (63,)
 
-            dyn_rows.append(np.concatenate([dyn_feat, stat_feat]))       # (15+S,)
+            dyn_rows.append(np.concatenate([dyn_feat, stat_feat]))       # (78,)
 
-        X = np.stack(dyn_rows).astype(np.float32)   # (N , 15+S)
+        X = np.stack(dyn_rows).astype(np.float32)   # (N , 78)
 
         return X, ids
     
@@ -228,7 +233,6 @@ class _training_selector:
                 "dynamic_metadata"     : {"rates": …, "availabilities": …, "batteryLevels": …},
                 "last_dynamic_metadata": {"rates": …, "availabilities": …, "batteryLevels": …},
                 "static_metadata"      : {...},
-                "utility"              : float,
                 "success"              : bool | int,
                 "round"                : int,
                 "last_utility"         : float,
@@ -288,19 +292,18 @@ class _training_selector:
             last_succ   = 1.0 if rec.get("last_success") else 0.0
             last_round  = float(rec.get("last_round",     0))
 
-            curr_util   = float(rec.get("utility",        0.0))
             curr_succ   = 1.0 if rec.get("success")      else 0.0
             curr_round  = float(rec.get("round",          0))
 
             hist_vec = np.asarray(
                 [last_util, last_succ, last_round,
-                curr_util, curr_succ, curr_round],
+                curr_succ, curr_round],
                 dtype=np.float32
             )
 
             rows.append(np.concatenate([delta_dyn, static_vec, hist_vec]))
 
-        X = np.stack(rows).astype(np.float32)   # (N , 15 + S + 6)
+        X = np.stack(rows).astype(np.float32)   # (N , 15 + 63 + 6)
         return X, ids
 
 
@@ -348,12 +351,24 @@ class _training_selector:
 
 
     def select_participant(self, num_of_clients: int) -> List[int]:
-        """Return ``num_of_clients`` client IDs with the highest *predicted* utility."""
+        """Return num_of_clients client IDs with the highest predicted utility."""
+
+        m = self.getAllMetrics()             # snapshot *after* we updated the book-keeping
+        logging.info(
+            "[Bliss] R%3d │ seen=%d, seen twice=%d, unseen=%d, stragglers=%d │ "
+            "util: avg %.4f (min %.4f … max %.4f) │ "
+            "no-strag util: avg %.4f (min %.4f … max %.4f)",
+            m["round"] + 1,                  # summarising *previous* round
+            m["seen"], m["seen_twice"], m["unseen"], m["stragglers"],
+            m["avg_util"], m["min_util"], m["max_util"],
+            m["avg_util_no_strag"], m["min_util_no_strag"], m["max_util_no_strag"]
+        )
 
         # ------------------------------------------------------------------
         # 1 ▸ TRAIN **gθ** – map (static + current dynamic) → utility
         #     Training data: any client we have *already* seen at least once.
         # ------------------------------------------------------------------
+
         seen_once_ids = [cid for cid, info in self.clients.items() if info["seen"] > 0]
         train_predict_ids = self._weighted_sample(
             seen_once_ids,
@@ -373,9 +388,14 @@ class _training_selector:
                 X_train, _ = self.encode_predict(train_dicts)
                 y_train = np.array([self.clients[cid]["utility"] for cid in train_predict_ids])
                 if X_train.size > 0 and not np.allclose(y_train, 0):
-                    self._g_w, self._g_b = _linreg_fit(X_train, y_train)
+                    self._g_w, self._g_b = self.predict_model.fit(X_train, y_train)
+                    util_hat_dbg = self.predict_model.predict(X_train)
+                    logging.info("[Bliss] gθ fitted on %d pts  (RMSE %.4f)",
+                            len(train_predict_ids),
+                            float(np.sqrt(np.mean((util_hat_dbg - y_train)**2))))
+                    self._sample_debug_points(train_dicts, X_train, util_hat_dbg, tag="gθ-train")
             except NotImplementedError:
-                logging.warning("[Bliss] encode() not implemented – gθ not updated")
+                logging.warning("[Bliss] gθ not updated")
 
         # ------------------------------------------------------------------
         # 2 ▸ TRAIN **hϕ** – refresh model.  Need at least 2 observations / client.
@@ -396,7 +416,6 @@ class _training_selector:
                         "dynamic_metadata": base["dynamic_metadata"],
                         "last_dynamic_metadata": base["last_dynamic_metadata"],
                         "static_metadata": base["static_metadata"],
-                        "utility": base["utility"],
                         "success": base["success"],
                         "round": base["round"],
                         "last_utility": base["last_utility"],
@@ -408,9 +427,14 @@ class _training_selector:
                 X_train_r, _ = self.encode_refresh(enriched)
                 y_train_r = np.array([self.clients[cid]["utility"] for cid in train_refresh_ids])
                 if X_train_r.size > 0 and not np.allclose(y_train_r, 0):
-                    self._h_w, self._h_b = _linreg_fit(X_train_r, y_train_r)
+                    self._h_w, self._h_b = self.refresh_model.fit(X_train_r, y_train_r)
+                    util_hat_dbg = self.refresh_model.predict(X_train_r)
+                    logging.info("[Bliss] hϕ fitted on %d pts  (RMSE %.4f)",
+                                len(train_refresh_ids),
+                                float(np.sqrt(np.mean((util_hat_dbg - y_train_r)**2))))
+                    self._sample_debug_points(enriched, X_train_r, util_hat_dbg, tag="hϕ-train")
             except NotImplementedError:
-                logging.warning("[Bliss] encode() not implemented – hϕ not updated")
+                logging.warning("[Bliss] hϕ not updated")
 
         # ------------------------------------------------------------------
         # 3 ▸ PREDICT utilities for the online candidates passed via ClientManager
@@ -433,10 +457,11 @@ class _training_selector:
             try:
                 X_pred, ids_pred = self.encode_predict(enriched_predict)
                 if self._g_w is not None and X_pred.size > 0:
-                    util_hat = _linreg_predict(X_pred, self._g_w, self._g_b)
+                    util_hat = self.predict_model.predict(X_pred)
                 else:
                     util_hat = np.zeros(len(ids_pred), dtype=float)
                 predictions.extend(zip(ids_pred, util_hat.tolist()))
+                self._sample_debug_points(enriched_predict, X_pred, util_hat, tag="gθ-infer")
             except NotImplementedError:
                 logging.warning("[Bliss] encode() not implemented – assigning zero utility to unseen predictions")
                 predictions.extend((d["client_id"], 0.0) for d in enriched_predict)
@@ -461,10 +486,12 @@ class _training_selector:
             try:
                 X_ref, ids_ref = self.encode_refresh(enriched_refresh)
                 if self._h_w is not None and X_ref.size > 0:
-                    util_hat_r = _linreg_predict(X_ref, self._h_w, self._h_b)
+                    util_hat_r = self.refresh_model.predict(X_ref)
+                    logging.info("[Bliss] training of hϕ has happened")
                 else:
                     util_hat_r = np.zeros(len(ids_ref))
                 predictions.extend(list(zip(ids_ref, util_hat_r.tolist())))
+                self._sample_debug_points(enriched_refresh, X_ref, util_hat_r, tag="hϕ-infer")
             except NotImplementedError:
                 logging.warning("[Bliss] encode() not implemented – assigning zero utility to refresh predictions")
                 predictions.extend([(d["client_id"], 0.0) for d in enriched_refresh])
@@ -486,17 +513,30 @@ class _training_selector:
             logging.info(f"[Bliss] only {len(picked)} clients out of the requested {num_of_clients}")
 
         # ------------------------------------------------------------------
-        # 5 ▸ Book‑keeping & cleanup
+        # 5 ▸ Book-keeping & cleanup
         # ------------------------------------------------------------------
         for cid in picked:
             self.clients[cid]["seen"] += 1
             self.clients[cid]["round"] = self.round
+
+        # ------------ round-level summary log -----------------------------
+        m = self.getAllMetrics()             # snapshot *after* we updated the book-keeping
+        logging.info(
+            "[Bliss] R%3d │ seen=%d, seen twice=%d, unseen=%d, stragglers=%d │ "
+            "util: avg %.4f (min %.4f … max %.4f) │ "
+            "no-strag util: avg %.4f (min %.4f … max %.4f)",
+            m["round"] + 1,                  # summarising *previous* round
+            m["seen"], m["seen_twice"], m["unseen"], m["stragglers"],
+            m["avg_util"], m["min_util"], m["max_util"],
+            m["avg_util_no_strag"], m["min_util_no_strag"], m["max_util_no_strag"]
+        )
 
         self.round += 1
         self.clients_to_predict.clear()
         self.clients_to_refresh.clear()
 
         return picked
+
 
     # ------------------------------------------------------------------
     # Utility helpers (some remain stubbed)
@@ -510,6 +550,22 @@ class _training_selector:
         if not utils:
             return 0.0
         return float(np.median(utils))
+    
+    def _sample_debug_points(self, recs, enc_X, util_hat=None, k=5, tag=""):
+        """Pretty-print k random examples from `recs` alongside their encoding."""
+        idxs = random.sample(range(len(recs)), k=min(k, len(recs)))
+        pp   = pprint.PrettyPrinter(indent=2, compact=True, depth=2)
+
+        for i in idxs:
+            raw   = recs[i]
+            enc   = enc_X[i]
+            uhat  = None if util_hat is None else util_hat[i]
+            logging.info("[Bliss-DBG %s] id=%s  util_hat=%s\n"
+                        "  raw=%s\n  enc=%s",
+                        tag, raw["client_id"], 
+                        f"{uhat:.4f}" if uhat is not None else "-",
+                        pp.pformat(raw),
+                        np.array2string(enc, precision=3, floatmode='fixed'))
 
     def getAllMetrics(self):  # noqa: N802 – keep Oort naming
         """
@@ -530,10 +586,11 @@ class _training_selector:
         """
         # ------------- basic counters ------------------------------------
         seen_cnt   = sum(1 for c in self.clients.values() if c["seen"] > 0)
+        seen_twice = sum(1 for c in self.clients.values() if c["seen"] > 1)
         unseen_cnt = len(self.clients) - seen_cnt
 
         # ------------- stats for the most-recent completed round ---------
-        last_round = self.round - 1  # because self.round was incremented after scheduling
+        last_round = self.round
 
         utils_last_round = [
             c["utility"] for c in self.clients.values()
@@ -557,6 +614,7 @@ class _training_selector:
         return {
             "round":                 int(self.round),
             "seen":                  int(seen_cnt),
+            "seen_twice":            int(seen_twice),
             "unseen":                int(unseen_cnt),
             "avg_util":              avg_u,
             "min_util":              min_u,
@@ -565,13 +623,9 @@ class _training_selector:
             "min_util_no_strag":     min_ns,
             "max_util_no_strag":     max_ns,
             "stragglers":            int(stragglers),
+            "utils_last_round":      utils_last_round,
+            "succ_utils_last_round": succ_utils_last_round,
         }
-
-
-
-
-
-
 
 # -----------------------------------------------------------------------------
 # Testing selector – shape compatible with Oort.  *Mostly placeholder*
@@ -615,20 +669,4 @@ class _testing_selector:  # noqa: D401 – keep Oort naming
         greedy_heuristic: bool = True,
     ) -> Tuple[List[int], float, float]:
         raise NotImplementedError("Category‑aware testing not implemented for Bliss yet.")
-
-
-# -----------------------------------------------------------------------------
-# Internal helper – extremely light linear regressor for drift/prediction
-# -----------------------------------------------------------------------------
-
-def _linreg_fit(X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, float]:
-    """Return (weights, bias) solving y ≈ Xw + b via least‑squares."""
-    # Add bias term
-    X_ = np.hstack([X, np.ones((X.shape[0], 1))])
-    w, *_ = np.linalg.lstsq(X_, y, rcond=None)
-    return w[:-1], w[-1]
-
-
-def _linreg_predict(X: np.ndarray, w: np.ndarray, b: float) -> np.ndarray:
-    return X @ w + b
 
