@@ -1,4 +1,5 @@
 import argparse
+import json
 
 from fedscale.cloud import commons
 
@@ -141,6 +142,72 @@ parser.add_argument("--number_clients_to_predict_utility", type=int, default=300
 parser.add_argument("--amount_clients_predict_train_set", type=int, default=500)
 parser.add_argument("--amount_clients_refresh_train_set", type=int, default=500)
 parser.add_argument("--ema_alpha", type=float, default=0.7)
+
+# Regressor
+parser.add_argument(
+    "--g_model",
+    type=str,
+    default="xgboost",
+    choices=["xgboost", "mlp", "linreg"],
+    help="Regressor used for the g-model (utility prediction for unseen clients)."
+)
+
+parser.add_argument(
+    "--h_model",
+    type=str,
+    default="xgboost",
+    choices=["xgboost", "mlp", "linreg"],
+    help="Regressor used for the h-model (utility refresh for seen clients)."
+)
+
+# ----- XGBoost --------------------------------------------------------------
+parser.add_argument("--xgboost_g_n_estimators",           type=int,   default=300)
+parser.add_argument("--xgboost_g_learning_rate",          type=float, default=0.05)
+parser.add_argument("--xgboost_g_max_depth",              type=int,   default=6)
+parser.add_argument("--xgboost_g_subsample",              type=float, default=0.8)
+parser.add_argument("--xgboost_g_colsample_bytree",       type=float, default=0.8)
+parser.add_argument("--xgboost_g_objective",              type=str,   default="reg:squarederror")
+parser.add_argument("--xgboost_g_n_jobs",                 type=int,   default=1)
+parser.add_argument("--xgboost_g_eval_metric",            type=str,   default="rmse")
+
+parser.add_argument("--xgboost_h_n_estimators",           type=int,   default=300)
+parser.add_argument("--xgboost_h_learning_rate",          type=float, default=0.05)
+parser.add_argument("--xgboost_h_max_depth",              type=int,   default=6)
+parser.add_argument("--xgboost_h_subsample",              type=float, default=0.8)
+parser.add_argument("--xgboost_h_colsample_bytree",       type=float, default=0.8)
+parser.add_argument("--xgboost_h_objective",              type=str,   default="reg:squarederror")
+parser.add_argument("--xgboost_h_n_jobs",                 type=int,   default=1)
+parser.add_argument("--xgboost_h_eval_metric",            type=str,   default="rmse")
+
+# ----- MLP (PyTorch) --------------------------------------------------------
+# hidden_layer_sizes is a comma-separated string, e.g. "128,64"
+parser.add_argument("--mlp_g_hidden_layer_sizes",         type=str,   default="128,64")
+parser.add_argument("--mlp_g_max_iter",                   type=int,   default=50)
+parser.add_argument("--mlp_g_learning_rate_init",         type=float, default=1e-3)
+parser.add_argument("--mlp_g_batch_size",                 type=int,   default=256)
+
+parser.add_argument("--mlp_h_hidden_layer_sizes",         type=str,   default="128,64")
+parser.add_argument("--mlp_h_max_iter",                   type=int,   default=50)
+parser.add_argument("--mlp_h_learning_rate_init",         type=float, default=1e-3)
+parser.add_argument("--mlp_h_batch_size",                 type=int,   default=256)
+
+# ----- Linear regression (scikit-learn) ------------------------------------
+parser.add_argument("--linreg_g_fit_intercept", action="store_true")
+parser.add_argument("--linreg_g_positive",      action="store_true")
+
+parser.add_argument("--linreg_h_fit_intercept", action="store_true")
+parser.add_argument("--linreg_h_positive",      action="store_true")
+
+
+# local training strategy
+parser.add_argument("--adaptive_training",                   type=bool,   default=False)
+parser.add_argument("--t_budget",                    type=int,   default=300)
+parser.add_argument("--budget_recheck_steps",              type=int,   default=5)
+parser.add_argument("--ewma_lambda",                       type=float,   default=0.9)
+parser.add_argument("--min_payload_frac",                  type=float,   default=0.3)
+# parser.add_argument("--",                   type=,   default=)
+# parser.add_argument("--",                   type=,   default=)
+
 
 # for albert
 parser.add_argument(
@@ -310,15 +377,4 @@ datasetCategories = {
     "yelp": 5,
 }
 
-# Profiled relative speech w.r.t. Mobilenet
-model_factor = {
-    "shufflenet": 0.0644 / 0.0554,
-    "albert": 0.335 / 0.0554,
-    "resnet": 0.135 / 0.0554,
-}
-
 args.num_class = datasetCategories.get(args.data_set, args.num_classes)
-for model_name in model_factor:
-    if model_name in args.model:
-        args.clock_factor = args.clock_factor * model_factor[model_name]
-        break

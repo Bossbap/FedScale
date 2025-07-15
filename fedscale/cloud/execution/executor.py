@@ -16,6 +16,7 @@ import fedscale.cloud.logger.executor_logging as logger
 from fedscale.cloud.channels.channel_context import ClientConnections
 from fedscale.cloud.execution.tensorflow_client import TensorflowClient
 from fedscale.cloud.execution.torch_client import TorchClient
+from fedscale.cloud.execution.adaptive_torch_client import AdaptiveTorchClient
 from fedscale.cloud.execution.data_processor import collate, voice_collate_fn
 from fedscale.cloud.execution.rl_client import RLClient
 from fedscale.cloud.fllibs import *
@@ -314,7 +315,10 @@ class Executor(object):
             if conf.task == "rl":
                 return RLClient(conf)
             else:
-                return TorchClient(conf)
+                if conf.adaptive_training:
+                    return AdaptiveTorchClient(conf)
+                else:
+                    return TorchClient(conf)
         raise "Currently, FedScale supports tensorflow and pytorch."
 
     def training_handler(self, client_id, conf, model):

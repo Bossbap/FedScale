@@ -2,17 +2,18 @@
 
 # ========== Cluster configuration ========== 
 # ip address of the parameter server (need 1 GPU process)
-ps_ip: 129.104.253.46
+ps_ip: 129.104.254.52
 
 # ip address of each worker:# of available gpus process on each gpu in this node
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips:
-    - 129.104.253.46:[3]
-    - 129.104.254.52:[4]
-    - 129.104.252.53:[4]
+    - 129.104.254.52:[3]
+    - 129.104.253.46:[4]
     - 129.104.252.56:[4]
+    - 129.104.253.48:[4]
     - 129.104.252.45:[4]
+    - 129.104.253.50:[4]
 
 exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
 
@@ -43,7 +44,8 @@ job_conf:
     - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
     - use_cuda: True
     - num_loaders: 2
-
+    - clock_factor: 20
+    
     - model: resnet18             # NOTE: Please refer to our model zoo README and use models for these small image (e.g., 32x32x3) inputs
     # - gradient_policy: fed-yogi
 
@@ -59,8 +61,8 @@ job_conf:
     - weight_decay: 1e-4
 
     - sample_mode: bliss
-    - number_clients_to_refresh_utility: 1000
-    - number_clients_to_predict_utility: 500
-    - amount_clients_predict_train_set: 300
-    - amount_clients_refresh_train_set: 300
+    - number_clients_to_refresh_utility: 300
+    - number_clients_to_predict_utility: 300
+    - amount_clients_predict_train_set: 1000
+    - amount_clients_refresh_train_set: 2000
     - ema_alpha: 0.9

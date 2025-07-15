@@ -768,10 +768,14 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             dictionary: TorchClient training config.
 
         """
-        conf = {
-            "learning_rate": self.args.learning_rate,
-        }
-        return conf
+        return {
+            "adaptive_training":self.args.adaptive_training,
+            "learning_rate":self.args.learning_rate, 
+            "t_budget":self.args.t_budget_round,
+            "budget_recheck_steps":self.args.budget_recheck_steps,
+            "ewma_lambda":self.args.ewma_lambda,
+            "min_payload_frac":self.args.min_payload_frac
+            }
 
     def create_client_task(self, executor_id):
         """Issue a new client training task to specific executor

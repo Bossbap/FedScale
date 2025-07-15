@@ -123,7 +123,8 @@ class ClientManager:
             batch_size=batch_size,
             local_steps=local_steps,
             model_size=model_size,
-            model_amount_parameters=model_amount_parameters
+            model_amount_parameters=model_amount_parameters,
+            clock_factor=self.args.clock_factor
         )
 
         return client_completion_time

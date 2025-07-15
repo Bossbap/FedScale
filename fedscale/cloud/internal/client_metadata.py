@@ -109,7 +109,6 @@ class ClientMetadata:
 
         return phase == 'a'
 
-
     def _lookup(self, timestamps: list[int], values: list[float], t: float) -> float:
         """Return the trace value at sim-time t, assuming timestamps are sorted."""
         norm_t = t % (48*3600)
@@ -227,7 +226,8 @@ class ClientMetadata:
         model_size: int,
         model_amount_parameters: int,
         augmentation_factor: float = 3.0,
-        reduction_factor: float = 0.5
+        reduction_factor: float = 0.5,
+        clock_factor: float = 1.0
     ) -> float:
         """
         Simulate download → local training → upload, using dynamic bandwidth and compute traces.
@@ -254,7 +254,7 @@ class ClientMetadata:
         # 2) DOWNLOAD phase
         download_end = self._simulate_data_phase(
             start_time=cur_time,
-            total_work=model_size,
+            total_work=model_size * clock_factor,
             timestamps=self.timestamps_livelab,
             rate_fn=self.bandwidth,
             window=WINDOW,
@@ -266,7 +266,7 @@ class ClientMetadata:
         total_ops = augmentation_factor * model_amount_parameters * batch_size * local_steps
         compute_end = self._simulate_data_phase(
             start_time=download_end,
-            total_work=total_ops,
+            total_work=total_ops * clock_factor,
             timestamps=self.timestamps_carat,
             rate_fn=self.compute_speed,
             window=WINDOW,
@@ -276,7 +276,7 @@ class ClientMetadata:
         # 4) UPLOAD phase
         upload_end = self._simulate_data_phase(
             start_time=compute_end,
-            total_work=model_size / reduction_factor, # Makes the upload phase twice as long
+            total_work=model_size / reduction_factor * clock_factor, # Makes the upload phase twice as long
             timestamps=self.timestamps_livelab,
             rate_fn=self.bandwidth,
             window=WINDOW,

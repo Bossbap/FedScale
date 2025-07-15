@@ -5,7 +5,7 @@ This implementation follows the high‑level pipeline described in the PDF draft
 public API remains **identical** to Oort’s so that FedScale can switch between
 `sample_mode: oort` and `sample_mode: bliss` without touching core code.
 
-The predictive models `gθ` (utility drift) and `hϕ` (utility estimation for
+The predictive models `g` (utility drift) and `h` (utility estimation for
 unseen clients) are **stubbed with very lightweight linear regressors trained
 via `numpy.linalg.lstsq`** so that they are fast, dependency‑free and keep the
 shape of the algorithm.  Drop‑in replacement with more sophisticated models is
@@ -67,16 +67,16 @@ class _training_selector:
         self.clients_to_predict = []
         self.clients_to_refresh = []
 
-        self.predict_model = Regressor(args.predict_model, args.predict_hyperparameters)
-        self.refresh_model = Regressor(args.refresh_model, args.refresh_hyperparameters)
+        self.g_model = Regressor(args.g_model, _extract_hyperparams(args, args.g_model, 'g'))
+        self.h_model = Regressor(args.h_model, _extract_hyperparams(args, args.h_model, 'h'))
 
-        # Buffers for (Δm, Δu) pairs used to train gθ        
+        # Buffers for (Δm, Δu) pairs used to train g        
         self._drift_X: deque[np.ndarray] = deque(maxlen=self.amount_clients_refresh_train_set)
         self._drift_y: deque[float] = deque(maxlen=self.amount_clients_predict_train_set)
-        self._g_w: Optional[np.ndarray] = None  # weights for gθ
+        self._g_w: Optional[np.ndarray] = None  # weights for g
         self._g_b: Optional[float] = None
 
-        # Linear regressor weights (gθ and hϕ)
+        # Linear regressor weights (g and h)
         self._g_w: np.ndarray | None = None
         self._g_b: float | None = None
         self._h_w: np.ndarray | None = None
@@ -138,7 +138,6 @@ class _training_selector:
         # client['utility'] = util
         
         client['success'] = success
-        client['last_round'] = self.round
 
     # ------------------------------------------------------------------
     # Weighted sampling helper
@@ -165,10 +164,10 @@ class _training_selector:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def encode_predict(client_dicts: List[Dict[str, Any]]
+    def encode_g(client_dicts: List[Dict[str, Any]]
                     ) -> Tuple[np.ndarray, List[int]]:
         """
-        Build the training-/inference-matrix for **gθ**.
+        Build the training-/inference-matrix for **g**.
 
         Parameters
         ----------
@@ -220,10 +219,10 @@ class _training_selector:
     # bliss/_training_selector.py  (inside the class)
 
     @staticmethod
-    def encode_refresh(records: List[Dict[str, Any]]
+    def encode_h(records: List[Dict[str, Any]]
                     ) -> Tuple[np.ndarray, List[int]]:
         """
-        Build the design-matrix to train **hϕ** (the refresh model).
+        Build the design-matrix to train **h**.
 
         Each *record* contains both the *current* and the *previous* dynamic
         metadata, plus a few scalar history fields:
@@ -242,7 +241,7 @@ class _training_selector:
 
         Returns
         -------
-        X   : np.ndarray  shape = (N, 15 + 63 + 6) = (N, 84) (float32)
+        X   : np.ndarray  shape = (N, 15 + 63 + 5) = (N, 83) (float32)
             ├─ 15  deltas of current – previous dynamic features
             ├─  63  static-metadata encoding
             └─  6  scalar history features
@@ -254,7 +253,7 @@ class _training_selector:
         ids:  List[int]        = []
         rows: List[np.ndarray] = []
 
-        # ----------- normalisation constants (same as encode_predict) ----------
+        # ----------- normalisation constants (same as encode_g) ----------
         _RATE_MIN, _RATE_SPAN   = 1.0, 53.0      # 1 … 54
         _AVAIL_MIN, _AVAIL_SPAN = 35.0, 65.0     # 35 … 100
         _BATT_MIN, _BATT_SPAN   = -1.0, 100.0    # –1 … 99
@@ -365,50 +364,50 @@ class _training_selector:
         )
 
         # ------------------------------------------------------------------
-        # 1 ▸ TRAIN **gθ** – map (static + current dynamic) → utility
+        # 1 ▸ TRAIN **g** – map (static + current dynamic) → utility
         #     Training data: any client we have *already* seen at least once.
         # ------------------------------------------------------------------
 
         seen_once_ids = [cid for cid, info in self.clients.items() if info["seen"] > 0]
-        train_predict_ids = self._weighted_sample(
+        train_g_ids = self._weighted_sample(
             seen_once_ids,
             min(self.amount_clients_predict_train_set, len(seen_once_ids)),
         )
 
-        if train_predict_ids:
+        if train_g_ids:
             train_dicts = [
                 {
                     "client_id": cid,
                     "dynamic_metadata": self.clients[cid]["dynamic_metadata"],
                     "static_metadata": self.clients[cid]["static_metadata"],
                 }
-                for cid in train_predict_ids
+                for cid in train_g_ids
             ]
             try:
-                X_train, _ = self.encode_predict(train_dicts)
-                y_train = np.array([self.clients[cid]["utility"] for cid in train_predict_ids])
+                X_train, _ = self.encode_g(train_dicts)
+                y_train = np.array([self.clients[cid]["utility"] for cid in train_g_ids])
                 if X_train.size > 0 and not np.allclose(y_train, 0):
-                    self._g_w, self._g_b = self.predict_model.fit(X_train, y_train)
-                    util_hat_dbg = self.predict_model.predict(X_train)
-                    logging.info("[Bliss] gθ fitted on %d pts  (RMSE %.4f)",
-                            len(train_predict_ids),
+                    self.g_model.fit(X_train, y_train)
+                    util_hat_dbg = self.g_model.predict(X_train)
+                    logging.info("[Bliss] g fitted on %d pts  (RMSE %.4f)",
+                            len(train_g_ids),
                             float(np.sqrt(np.mean((util_hat_dbg - y_train)**2))))
-                    self._sample_debug_points(train_dicts, X_train, util_hat_dbg, tag="gθ-train")
+                    self._sample_debug_points(train_dicts, X_train, util_hat_dbg, tag="g-train")
             except NotImplementedError:
-                logging.warning("[Bliss] gθ not updated")
+                logging.warning("[Bliss] g not updated")
 
         # ------------------------------------------------------------------
-        # 2 ▸ TRAIN **hϕ** – refresh model.  Need at least 2 observations / client.
+        # 2 ▸ TRAIN **h**.  Need at least 2 observations / client.
         # ------------------------------------------------------------------
         seen_twice_ids = [cid for cid, info in self.clients.items() if info["seen"] > 1]
-        train_refresh_ids = self._weighted_sample(
+        train_h_ids = self._weighted_sample(
             seen_twice_ids,
             min(self.amount_clients_refresh_train_set, len(seen_twice_ids)),
         )
 
-        if train_refresh_ids:
+        if train_h_ids:
             enriched: List[Dict[str, Any]] = []
-            for cid in train_refresh_ids:
+            for cid in train_h_ids:
                 base = self.clients[cid]
                 enriched.append(
                     {
@@ -424,24 +423,24 @@ class _training_selector:
                     }
                 )
             try:
-                X_train_r, _ = self.encode_refresh(enriched)
-                y_train_r = np.array([self.clients[cid]["utility"] for cid in train_refresh_ids])
+                X_train_r, _ = self.encode_h(enriched)
+                y_train_r = np.array([self.clients[cid]["utility"] for cid in train_h_ids])
                 if X_train_r.size > 0 and not np.allclose(y_train_r, 0):
-                    self._h_w, self._h_b = self.refresh_model.fit(X_train_r, y_train_r)
-                    util_hat_dbg = self.refresh_model.predict(X_train_r)
-                    logging.info("[Bliss] hϕ fitted on %d pts  (RMSE %.4f)",
-                                len(train_refresh_ids),
+                    self.h_model.fit(X_train_r, y_train_r)
+                    util_hat_dbg = self.h_model.predict(X_train_r)
+                    logging.info("[Bliss] h fitted on %d pts  (RMSE %.4f)",
+                                len(train_h_ids),
                                 float(np.sqrt(np.mean((util_hat_dbg - y_train_r)**2))))
-                    self._sample_debug_points(enriched, X_train_r, util_hat_dbg, tag="hϕ-train")
+                    self._sample_debug_points(enriched, X_train_r, util_hat_dbg, tag="h-train")
             except NotImplementedError:
-                logging.warning("[Bliss] hϕ not updated")
+                logging.warning("[Bliss] h not updated")
 
         # ------------------------------------------------------------------
         # 3 ▸ PREDICT utilities for the online candidates passed via ClientManager
         # ------------------------------------------------------------------
         predictions: List[Tuple[int, float]] = []
 
-        # --- (a) Unseen online clients → gθ ---------------------------------
+        # --- (a) Unseen online clients → g ---------------------------------
         if self.clients_to_predict:
             # attach the per-client static features we stored at registration
             enriched_predict: List[Dict[str, Any]] = []
@@ -455,19 +454,16 @@ class _training_selector:
                 )
 
             try:
-                X_pred, ids_pred = self.encode_predict(enriched_predict)
-                if self._g_w is not None and X_pred.size > 0:
-                    util_hat = self.predict_model.predict(X_pred)
-                else:
-                    util_hat = np.zeros(len(ids_pred), dtype=float)
+                X_pred, ids_pred = self.encode_g(enriched_predict)
+                util_hat = self.g_model.predict(X_pred)
                 predictions.extend(zip(ids_pred, util_hat.tolist()))
-                self._sample_debug_points(enriched_predict, X_pred, util_hat, tag="gθ-infer")
+                self._sample_debug_points(enriched_predict, X_pred, util_hat, tag="g-infer")
             except NotImplementedError:
                 logging.warning("[Bliss] encode() not implemented – assigning zero utility to unseen predictions")
                 predictions.extend((d["client_id"], 0.0) for d in enriched_predict)
 
 
-        # --- (b) Seen online clients to refresh → hϕ ------------------------
+        # --- (b) Seen online clients to refresh → h ------------------------
         if self.clients_to_refresh:
             enriched_refresh: List[Dict[str, Any]] = []
             for d in self.clients_to_refresh:
@@ -484,14 +480,10 @@ class _training_selector:
                     }
                 )
             try:
-                X_ref, ids_ref = self.encode_refresh(enriched_refresh)
-                if self._h_w is not None and X_ref.size > 0:
-                    util_hat_r = self.refresh_model.predict(X_ref)
-                    logging.info("[Bliss] training of hϕ has happened")
-                else:
-                    util_hat_r = np.zeros(len(ids_ref))
+                X_ref, ids_ref = self.encode_h(enriched_refresh)
+                util_hat_r = self.h_model.predict(X_ref)
                 predictions.extend(list(zip(ids_ref, util_hat_r.tolist())))
-                self._sample_debug_points(enriched_refresh, X_ref, util_hat_r, tag="hϕ-infer")
+                self._sample_debug_points(enriched_refresh, X_ref, util_hat_r, tag="h-infer")
             except NotImplementedError:
                 logging.warning("[Bliss] encode() not implemented – assigning zero utility to refresh predictions")
                 predictions.extend([(d["client_id"], 0.0) for d in enriched_refresh])
@@ -516,6 +508,7 @@ class _training_selector:
         # 5 ▸ Book-keeping & cleanup
         # ------------------------------------------------------------------
         for cid in picked:
+            self.clients[cid]["last_round"] = self.clients[cid]["round"]  
             self.clients[cid]["seen"] += 1
             self.clients[cid]["round"] = self.round
 
@@ -551,21 +544,69 @@ class _training_selector:
             return 0.0
         return float(np.median(utils))
     
-    def _sample_debug_points(self, recs, enc_X, util_hat=None, k=5, tag=""):
-        """Pretty-print k random examples from `recs` alongside their encoding."""
+
+    def _sample_debug_points(
+            self,
+            recs,          # list/tuple of raw dicts
+            enc_X,         # same length as recs
+            util_hat=None, # None or 1-D arraylike
+            k=5,
+            tag=""
+        ):
+        """
+        Pretty-print *k* random examples from `recs` alongside their encoding.
+        While doing so, keep a global tally **for h-train calls only**:
+
+            • self._h_tally['total']  – # of samples ever passed to h-train
+            • self._h_tally['stale']  – subset with (last_round - round) >= 2
+        """
+
+        # ------------------------------------------------------------------
+        # 1.  Ensure the global tally container exists
+        # ------------------------------------------------------------------
+        if not hasattr(self, "_h_tally"):
+            # Initialise the counters once per process
+            self._h_tally = {"total": 0, "stale": 0}
+
+        # ------------------------------------------------------------------
+        # 2.  Update the counters **before** sampling so every record is seen
+        # ------------------------------------------------------------------
+        if tag.startswith("h-train"):
+            for raw in recs:                      # iterate through the full batch
+                last_r = raw.get("last_round")
+                this_r = raw.get("round")
+                if last_r is not None and this_r is not None:
+                    self._h_tally["total"] += 1
+                    if (last_r - this_r) >= 2:    # “2 or more than”
+                        self._h_tally["stale"] += 1
+
+            # Optional: emit the running tally so it shows up in the log
+            logging.info(
+                "[Bliss-DBG] h-train running tally — total: %d,  stale (Δ≥2): %d",
+                self._h_tally["total"],
+                self._h_tally["stale"],
+            )
+
+        # ------------------------------------------------------------------
+        # 3.  Pretty-print *k* random examples (unchanged behaviour)
+        # ------------------------------------------------------------------
         idxs = random.sample(range(len(recs)), k=min(k, len(recs)))
         pp   = pprint.PrettyPrinter(indent=2, compact=True, depth=2)
 
         for i in idxs:
-            raw   = recs[i]
-            enc   = enc_X[i]
-            uhat  = None if util_hat is None else util_hat[i]
-            logging.info("[Bliss-DBG %s] id=%s  util_hat=%s\n"
-                        "  raw=%s\n  enc=%s",
-                        tag, raw["client_id"], 
-                        f"{uhat:.4f}" if uhat is not None else "-",
-                        pp.pformat(raw),
-                        np.array2string(enc, precision=3, floatmode='fixed'))
+            raw  = recs[i]
+            enc  = enc_X[i]
+            uhat = None if util_hat is None else util_hat[i]
+
+            logging.info(
+                "[Bliss-DBG %s] id=%s  util_hat=%s\n"
+                "  raw=%s\n  enc=%s",
+                tag,
+                raw.get("client_id", "<NA>"),
+                f"{uhat:.4f}" if uhat is not None else "-",
+                pp.pformat(raw),
+                np.array2string(np.asarray(enc), precision=3, floatmode="fixed"),
+            )
 
     def getAllMetrics(self):  # noqa: N802 – keep Oort naming
         """
@@ -626,6 +667,41 @@ class _training_selector:
             "utils_last_round":      utils_last_round,
             "succ_utils_last_round": succ_utils_last_round,
         }
+    
+# -----------------------------------------------------------------------------
+# Internal helper functions
+# -----------------------------------------------------------------------------
+
+
+def _extract_hyperparams(args, model_name: str, head: str) -> dict:
+    """
+    Build a hyper-parameter dict for a given <model_name> and head ('g' or 'h').
+
+    * Scans all attributes of `args`.
+    * Keeps only those whose flag starts with  "<model_name>_<head>_".
+    * Strips that prefix when storing the key in the returned dict.
+    * Converts comma-separated strings like "128,64" into a list of ints.
+
+    Example
+    -------
+    args.xgboost_g_learning_rate  -> {'learning_rate': 0.05}
+    args.mlp_h_hidden_layer_sizes "128,64" -> {'hidden_sizes': [128, 64]}
+    """
+    model_name = (model_name or "").lower()
+    prefix = f"{model_name}_{head.lower()}_"
+    out = {}
+
+    for k, v in vars(args).items():
+        if k.startswith(prefix):
+            hp_key = k[len(prefix):]            # drop the prefix
+            # special parsing: "128,64" -> (128, 64)
+            if isinstance(v, str) and "," in v and hp_key.endswith("sizes"):
+                v = tuple(v)
+            # drop unset *bool* flags that remain False
+            if isinstance(v, bool) and v is False:
+                continue
+            out[hp_key] = v
+    return out
 
 # -----------------------------------------------------------------------------
 # Testing selector – shape compatible with Oort.  *Mostly placeholder*
