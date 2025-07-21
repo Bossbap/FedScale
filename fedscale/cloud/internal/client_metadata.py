@@ -248,8 +248,7 @@ class ClientMetadata:
         # Constants
         WINDOW = 48 * 3600  # 48h in seconds
 
-        # Noise
-        self._round_noise = np.random.lognormal(mean=0.0, sigma=0.25)
+        self.sample_round_noise()
 
         # 2) DOWNLOAD phase
         download_end = self._simulate_data_phase(
@@ -284,6 +283,42 @@ class ClientMetadata:
         )
 
         return (upload_end-cur_time)
+    
+    def get_download_time(self, cur_time: float, model_size_mb: float,
+                          clock_factor: float = 1.0) -> float:
+        """Return ONLY the simulated download latency (sec)."""
+        WINDOW = 48 * 3600  # 48 h
+        finish = self._simulate_data_phase(
+            start_time=cur_time,
+            total_work=model_size_mb * clock_factor,
+            timestamps=self.timestamps_livelab,
+            rate_fn=self.bandwidth,
+            window=WINDOW,
+            scale=1.0
+        )
+        return finish - cur_time
+
+    def get_upload_time(self, start_time: float,
+                        model_size_mb: float,
+                        reduction_factor: float = 0.5,
+                        clock_factor: float = 1.0) -> float:
+        """Return ONLY the simulated upload latency (sec)."""
+        WINDOW = 48 * 3600
+        finish = self._simulate_data_phase(
+            start_time=start_time,
+            total_work=model_size_mb / reduction_factor * clock_factor,
+            timestamps=self.timestamps_livelab,
+            rate_fn=self.bandwidth,
+            window=WINDOW,
+            scale=1.0
+        )
+        return finish - start_time
+    
+    def sample_round_noise(self, target_mean: float = 0.9, sigma: float = 0.25):
+        """One log-normal noise multiplier per round (σ from original code)."""
+        # Noise
+        mu = np.log(target_mean) - (sigma**2)/2
+        self._round_noise = np.random.lognormal(mean=mu, sigma=sigma)
 
     def get_completion_time_lognormal(
         self,

@@ -43,7 +43,7 @@ job_conf:
     - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
     - use_cuda: True
     - num_loaders: 2
-    - clock_factor: 20
+    - clock_factor: 30
     
     - model: resnet18             # NOTE: Please refer to our model zoo README and use models for these small image (e.g., 32x32x3) inputs
     - gradient_policy: fed-prox

@@ -24,6 +24,7 @@ fedscale/cloud/channels/channel_context.py
 fedscale/cloud/channels/job_api_pb2.py
 fedscale/cloud/channels/job_api_pb2_grpc.py
 fedscale/cloud/execution/__init__.py
+fedscale/cloud/execution/adaptive_torch_client.py
 fedscale/cloud/execution/client_base.py
 fedscale/cloud/execution/data_processor.py
 fedscale/cloud/execution/executor.py
@@ -244,6 +245,7 @@ thirdparty/__init__.py
 thirdparty/bliss/__init__.py
 thirdparty/bliss/bliss.py
 thirdparty/bliss/encode.py
+thirdparty/bliss/regressor.py
 thirdparty/oort/__init__.py
 thirdparty/oort/oort.py
 thirdparty/oort/utils/__init__.py

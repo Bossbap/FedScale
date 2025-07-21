@@ -198,15 +198,17 @@ parser.add_argument("--linreg_g_positive",      action="store_true")
 parser.add_argument("--linreg_h_fit_intercept", action="store_true")
 parser.add_argument("--linreg_h_positive",      action="store_true")
 
+parser.add_argument("--collect_data",         type=bool,   default=False, help="Used to collect train data for regressors in thirdpary/bliss/regressor_test/datasets to experiment on h and g regressors")
+
+
+
 
 # local training strategy
-parser.add_argument("--adaptive_training",                   type=bool,   default=False)
-parser.add_argument("--t_budget",                    type=int,   default=300)
+parser.add_argument("--adaptive_training",                 type=bool,   default=False)
+parser.add_argument("--t_budget",                          type=int,   default=300)
 parser.add_argument("--budget_recheck_steps",              type=int,   default=5)
-parser.add_argument("--ewma_lambda",                       type=float,   default=0.9)
+parser.add_argument("--ewma_lambda",                       type=float,   default=0.7)
 parser.add_argument("--min_payload_frac",                  type=float,   default=0.3)
-# parser.add_argument("--",                   type=,   default=)
-# parser.add_argument("--",                   type=,   default=)
 
 
 # for albert

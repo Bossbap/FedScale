@@ -212,11 +212,17 @@ class Executor(object):
         client_id, train_config = config["client_id"], config["task_config"]
 
         if "model" not in config or not config["model"]:
-            raise "The 'model' object must be a non-null value in the training config."
+            raise "The \'model\' object must be a non-null value in the training config."
         client_conf = self.override_conf(train_config)
-        train_res = self.training_handler(
-            client_id=client_id, conf=client_conf, model=config["model"]
-        )
+        try:
+            train_res = self.training_handler(
+                client_id=client_id, conf=client_conf, model=config["model"]
+            )
+        except Exception:
+            logging.exception("[executor %s] Uncaught exception, cid=%d", 
+                            self.executor_id, cid)
+            train_res = {"client_id": cid, "success": False}
+
 
         # Report execution completion meta information
         response = self.aggregator_communicator.stub.CLIENT_EXECUTE_COMPLETION(
@@ -418,6 +424,8 @@ class Executor(object):
                 client_id=self.executor_id, executor_id=self.executor_id
             )
         )
+        # logging.info("[executor %s] ping server (round=%d, queue=%d)",
+        #       self.executor_id, self.round, len(self.event_queue))
         self.dispatch_worker_events(response)
 
     def event_monitor(self):

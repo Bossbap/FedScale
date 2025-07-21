@@ -14,11 +14,12 @@ straight‑forward – just plug them behind the same method signatures.
 
 import logging
 import random
-from collections import deque
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 import pprint
-
+from datetime import datetime
+from pathlib import Path
 import numpy as np
+import csv
 
 import sys, pathlib
 repo_root = pathlib.Path(__file__).resolve().parents[2]   # adjust depth if needed
@@ -35,16 +36,6 @@ def create_training_selector(args):
     """Factory used by `ClientManager` during training‑time sampling."""
     return _training_selector(args)
 
-
-def create_testing_selector(
-    data_distribution: Optional[Dict[Any, Any]] = None,
-    client_info: Optional[Dict[int, Sequence[float]]] = None,
-    model_size: Optional[int] = None,
-):
-    """Factory for the testing selector (currently unused for Bliss)."""
-    return _testing_selector(data_distribution, client_info, model_size)
-
-
 # -----------------------------------------------------------------------------
 # Training selector – core of Bliss
 # -----------------------------------------------------------------------------
@@ -53,12 +44,15 @@ class _training_selector:
     """Bliss training‑phase selector (implements Algorithm 1 from the PDF)."""
 
     def __init__(self, args, sample_seed: int = 233):
+        self.args = args
+
         self.number_clients_to_predict_utility = args.number_clients_to_predict_utility
         self.number_clients_to_refresh_utility = args.number_clients_to_refresh_utility
         self.amount_clients_refresh_train_set = args.amount_clients_refresh_train_set
         self.amount_clients_predict_train_set = args.amount_clients_predict_train_set
         self.ema_alpha = args.ema_alpha
         self.rng = random.Random(sample_seed)
+        np.random.seed(sample_seed)
         self.round = 0
 
         # Per‑client metadata
@@ -70,17 +64,33 @@ class _training_selector:
         self.g_model = Regressor(args.g_model, _extract_hyperparams(args, args.g_model, 'g'))
         self.h_model = Regressor(args.h_model, _extract_hyperparams(args, args.h_model, 'h'))
 
-        # Buffers for (Δm, Δu) pairs used to train g        
-        self._drift_X: deque[np.ndarray] = deque(maxlen=self.amount_clients_refresh_train_set)
-        self._drift_y: deque[float] = deque(maxlen=self.amount_clients_predict_train_set)
-        self._g_w: Optional[np.ndarray] = None  # weights for g
-        self._g_b: Optional[float] = None
-
         # Linear regressor weights (g and h)
         self._g_w: np.ndarray | None = None
         self._g_b: float | None = None
         self._h_w: np.ndarray | None = None
         self._h_b: float | None = None
+
+        self.collect_data = args.collect_data
+
+        # ── Pacer hyper‑parameters ─────────────────────────────────────
+        self.pacer_step    = args.pacer_step    # how often we inspect
+        self.pacer_delta   = args.pacer_delta   # ΔT when we adapt
+        self.t_budget      = args.t_budget      # current preferred time
+
+        # ── Book‑keeping for pacer ─────────────────────────────────────
+        self.exploitUtilHistory: list[float] = []   # ΣU over time‑windows
+        self.exploitClients:      list[int]  = []   # last round’s picks
+        self.successfulClients:   set[int]   = set()
+
+        if self.collect_data:
+            # target folder …/regressor_test/datasets/<job_name>
+            base_dir = (Path(__file__).resolve().parent         #  thirdparty/bliss
+                        / "regressor_test" / "datasets" / args.job_name)
+            base_dir.mkdir(parents=True, exist_ok=True)
+
+            ts = datetime.now().strftime("%m%d%H%M%S")   # e.g. 0716235849
+            self._g_file = base_dir / f"g_{ts}.csv"
+            self._h_file = base_dir / f"h_{ts}.csv"
 
         logging.info("[Bliss] training selector ready (seed=%d)", sample_seed)
 
@@ -139,6 +149,9 @@ class _training_selector:
         
         client['success'] = success
 
+        if success:
+            self.successfulClients.add(client_id)
+
     # ------------------------------------------------------------------
     # Weighted sampling helper
     # ------------------------------------------------------------------
@@ -154,10 +167,6 @@ class _training_selector:
         probs = util / util.sum()
         chosen = list(np.random.choice(pool_ids, size=k, replace=False, p=probs))
         return chosen
-    
-    # ------------------------------------------------------------------
-    # Placeholder encoder (to be replaced later)
-    # ------------------------------------------------------------------
 
     # ------------------------------------------------------------------
     # Master helper – turns the whole static-metadata dict into ONE vec
@@ -352,16 +361,7 @@ class _training_selector:
     def select_participant(self, num_of_clients: int) -> List[int]:
         """Return num_of_clients client IDs with the highest predicted utility."""
 
-        m = self.getAllMetrics()             # snapshot *after* we updated the book-keeping
-        logging.info(
-            "[Bliss] R%3d │ seen=%d, seen twice=%d, unseen=%d, stragglers=%d │ "
-            "util: avg %.4f (min %.4f … max %.4f) │ "
-            "no-strag util: avg %.4f (min %.4f … max %.4f)",
-            m["round"] + 1,                  # summarising *previous* round
-            m["seen"], m["seen_twice"], m["unseen"], m["stragglers"],
-            m["avg_util"], m["min_util"], m["max_util"],
-            m["avg_util_no_strag"], m["min_util_no_strag"], m["max_util_no_strag"]
-        )
+        self._pacer_update()
 
         # ------------------------------------------------------------------
         # 1 ▸ TRAIN **g** – map (static + current dynamic) → utility
@@ -395,6 +395,11 @@ class _training_selector:
                     self._sample_debug_points(train_dicts, X_train, util_hat_dbg, tag="g-train")
             except NotImplementedError:
                 logging.warning("[Bliss] g not updated")
+
+        if train_g_ids and self.collect_data:
+            self._dump_rows_to_csv(self._g_file, self.round,
+                           train_g_ids, X_train, y_train)
+
 
         # ------------------------------------------------------------------
         # 2 ▸ TRAIN **h**.  Need at least 2 observations / client.
@@ -434,6 +439,10 @@ class _training_selector:
                     self._sample_debug_points(enriched, X_train_r, util_hat_dbg, tag="h-train")
             except NotImplementedError:
                 logging.warning("[Bliss] h not updated")
+        
+        if train_h_ids and self.collect_data:
+                self._dump_rows_to_csv(self._h_file, self.round,
+                           train_h_ids, X_train_r, y_train_r)
 
         # ------------------------------------------------------------------
         # 3 ▸ PREDICT utilities for the online candidates passed via ClientManager
@@ -507,22 +516,12 @@ class _training_selector:
         # ------------------------------------------------------------------
         # 5 ▸ Book-keeping & cleanup
         # ------------------------------------------------------------------
+        self.exploitClients = picked
+
         for cid in picked:
             self.clients[cid]["last_round"] = self.clients[cid]["round"]  
             self.clients[cid]["seen"] += 1
             self.clients[cid]["round"] = self.round
-
-        # ------------ round-level summary log -----------------------------
-        m = self.getAllMetrics()             # snapshot *after* we updated the book-keeping
-        logging.info(
-            "[Bliss] R%3d │ seen=%d, seen twice=%d, unseen=%d, stragglers=%d │ "
-            "util: avg %.4f (min %.4f … max %.4f) │ "
-            "no-strag util: avg %.4f (min %.4f … max %.4f)",
-            m["round"] + 1,                  # summarising *previous* round
-            m["seen"], m["seen_twice"], m["unseen"], m["stragglers"],
-            m["avg_util"], m["min_util"], m["max_util"],
-            m["avg_util_no_strag"], m["min_util_no_strag"], m["max_util_no_strag"]
-        )
 
         self.round += 1
         self.clients_to_predict.clear()
@@ -532,11 +531,75 @@ class _training_selector:
 
 
     # ------------------------------------------------------------------
-    # Utility helpers (some remain stubbed)
+    # Utility helpers
     # ------------------------------------------------------------------
 
-    def calculateSumUtil(self, clientList: Sequence[int]) -> float:  # noqa: N802 – keep Oort naming
-        return float(sum(self.clients[c]['utility'] for c in clientList if c in self.clients))
+    def _dump_rows_to_csv(self, file_path: Path, round_idx: int,
+                          client_ids, X: np.ndarray, y: np.ndarray) -> None:
+        """Append encoded rows + target_utility + round to *file_path*."""
+        if X.size == 0:        # nothing to write
+            return
+
+        header_needed = not file_path.exists()
+        with file_path.open("a", newline="") as f:
+            w = csv.writer(f)
+            if header_needed:
+                header = (["round", "client_id"]
+                          + [f"f{i}" for i in range(X.shape[1])]
+                          + ["target_utility"])
+                w.writerow(header)
+
+            for cid, feats, target in zip(client_ids, X, y):
+                w.writerow([round_idx, cid] + feats.tolist() + [target])
+
+    def calculateSumUtil(self, client_ids: list[int]) -> float:
+        """Average utility of *successful* clients in <client_ids>."""
+        cnt, util = 1e-4, 0.0
+        for cid in client_ids:
+            if self.clients[cid]['success']:
+                cnt  += 1
+                util += self.clients[cid]['utility']
+        return util / cnt
+    
+    def _pacer_update(self):
+        """
+        Adaptive pacing *exactly* as in Oort:
+
+        • Every `pacer_step` rounds we compare the cumulated statistical
+          utility of the most‑recent window against the previous one.
+        • If the gain stagnates (≤ 10 %) we **relax** `t_budget`.
+        • If the gain swings wildly (≥ 5 ×) we **tighten** `t_budget`.
+        """
+
+        # ➊  Record utility of the round that just finished
+        last_util = self.calculateSumUtil(self.exploitClients)
+        self.exploitUtilHistory.append(last_util)
+        # ready for the next accumulation window
+        self.successfulClients.clear()
+
+        # ➋  Need at least two full windows before we can compare
+        if (self.round < 2 * self.pacer_step or
+            self.round % self.pacer_step):
+            return
+
+        util_prev = sum(self.exploitUtilHistory[-2*self.pacer_step:-self.pacer_step])
+        util_curr = sum(self.exploitUtilHistory[-self.pacer_step:])
+
+        if util_prev == 0:           # still warming up – nothing to do yet
+            return
+
+        # ➌  Stagnation  →  relax
+        if abs(util_curr - util_prev) <= 0.1 * util_prev:
+            self.t_budget += self.pacer_delta
+            logging.info("[Bliss/Pacer] utility flat – relaxing T to %.2f s", self.t_budget)
+
+        # ➍  Sharp change → tighten
+        elif abs(util_curr - util_prev) >= 5 * util_prev:
+            self.t_budget = max(self.pacer_delta, self.t_budget - self.pacer_delta)
+            logging.info("[Bliss/Pacer] utility swing – tightening T to %.2f s", self.t_budget)
+
+        # ➎  Expose new budget to the rest of FedScale
+        self.args.t_budget = self.t_budget
 
     def get_median_reward(self) -> float:
         utils = [c['utility'] for c in self.clients.values()]
@@ -598,15 +661,15 @@ class _training_selector:
             enc  = enc_X[i]
             uhat = None if util_hat is None else util_hat[i]
 
-            logging.info(
-                "[Bliss-DBG %s] id=%s  util_hat=%s\n"
-                "  raw=%s\n  enc=%s",
-                tag,
-                raw.get("client_id", "<NA>"),
-                f"{uhat:.4f}" if uhat is not None else "-",
-                pp.pformat(raw),
-                np.array2string(np.asarray(enc), precision=3, floatmode="fixed"),
-            )
+            # logging.info(
+            #     "[Bliss-DBG %s] id=%s  util_hat=%s\n"
+            #     "  raw=%s\n  enc=%s",
+            #     tag,
+            #     raw.get("client_id", "<NA>"),
+            #     f"{uhat:.4f}" if uhat is not None else "-",
+            #     pp.pformat(raw),
+            #     np.array2string(np.asarray(enc), precision=3, floatmode="fixed"),
+            # )
 
     def getAllMetrics(self):  # noqa: N802 – keep Oort naming
         """
@@ -706,6 +769,14 @@ def _extract_hyperparams(args, model_name: str, head: str) -> dict:
 # -----------------------------------------------------------------------------
 # Testing selector – shape compatible with Oort.  *Mostly placeholder*
 # -----------------------------------------------------------------------------
+
+def create_testing_selector(
+    data_distribution: Optional[Dict[Any, Any]] = None,
+    client_info: Optional[Dict[int, Sequence[float]]] = None,
+    model_size: Optional[int] = None,
+):
+    """Factory for the testing selector (currently unused for Bliss)."""
+    return _testing_selector(data_distribution, client_info, model_size)
 
 class _testing_selector:  # noqa: D401 – keep Oort naming
     """Bliss testing‑phase participant selector (stub)."""

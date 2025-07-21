@@ -1,0 +1,73 @@
+# Configuration file of FAR training experiment
+
+# ========== Cluster configuration ========== 
+# ip address of the parameter server (need 1 GPU process)
+ps_ip: 129.104.252.45
+
+# ip address of each worker:# of available gpus process on each gpu in this node
+# Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
+# E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
+worker_ips:
+    - 129.104.252.45:[3]
+    - 129.104.253.48:[4]
+    - 129.104.252.56:[4]
+    - 129.104.252.34:[4]
+    - 129.104.252.32:[4]
+    - 129.104.252.39:[4]
+    - 129.104.252.38:[4]
+    
+
+exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
+
+# Entry function of executor and aggregator under $exp_path
+executor_entry: execution/executor.py
+
+aggregator_entry: aggregation/aggregator.py
+
+auth:
+    ssh_user: "baptiste.geisenberger"
+    ssh_private_key: "/users/eleves-a/2024/baptiste.geisenberger/.ssh/id_rsa"
+
+# cmd to run before we can indeed run FAR (in order)
+setup_commands:
+    - source /Data/baptiste.geisenberger/miniconda3/bin/activate fedscale
+
+# ========== Additional job configuration ========== 
+# Default parameters are specified in config_parser.py, wherein more description of the parameter can be found
+
+job_conf: 
+    # - wandb_token: c5a1a0bea7a1022889068d96b579c791dc52420e
+    - job_name: femnist                   # Generate logs under this folder: log_path/job_name/time_stamp
+    - num_classes: 62
+    - log_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark # Path of log files
+    - data_set: femnist                     # Dataset: openImg, google_speech, stackoverflow
+    - data_dir: /Data/baptiste.geisenberger/Data/femnist    # Path of the dataset
+    - data_map_file: /Data/baptiste.geisenberger/Data/femnist/client_data_mapping/train.csv              # Allocation of data to each client, turn to iid setting if not provided
+    - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
+    - use_cuda: True
+    - num_loaders: 2
+    - clock_factor: 30
+    
+    - model: resnet18             # NOTE: Please refer to our model zoo README and use models for these small image (e.g., 32x32x3) inputs
+    # - gradient_policy: fed-yogi
+
+    - num_participants: 100                 # Number of participants per round, we use K=100 in our paper, large K will be much slower
+    - eval_interval: 5                      # How many rounds to run a testing on the testing set
+    - rounds: 750                           # Number of rounds to run this training. We use 1000 in our paper, while it may converge w/ ~400 rounds
+    - filter_less: 32                       # Remove clients w/ less than 21 samples
+    - learning_rate: 0.01
+    - decay_factor: 0.95
+    - decay_round: 10
+    - batch_size: 32
+    - weight_decay: 1e-4
+
+    - sample_mode: bliss
+    - number_clients_to_refresh_utility: 300
+    - number_clients_to_predict_utility: 300
+    - amount_clients_predict_train_set: 1000
+    - amount_clients_refresh_train_set: 2000
+    - ema_alpha: 0.9
+    - overcomitmment: 1.1
+
+    - adaptive_training: True
+    - t_budget: 200

@@ -34,7 +34,8 @@ class TorchClient(ClientBase):
 
         self.epoch_train_loss = 1e-4
         self.completed_steps = 0
-        self.loss_squared = 0
+        self.loss_sq_sum = 0.0
+        self.seen_samples = 0
 
     @overrides
     def train(self, client_data, model, conf):
@@ -55,6 +56,9 @@ class TorchClient(ClientBase):
         trained_unique_samples = min(
             len(client_data.dataset), conf.local_steps * conf.batch_size)
         self.global_model = None
+
+        self.loss_sq_sum = 0.0
+        self.seen_samples = 0
 
         if conf.gradient_policy == 'fed-prox':
             # could be move to optimizer
@@ -77,8 +81,8 @@ class TorchClient(ClientBase):
                    'success': self.completed_steps == conf.local_steps}
 
 
-        results['utility'] = math.sqrt(
-            self.loss_squared) * float(trained_unique_samples)
+        rms_loss = math.sqrt(self.loss_sq_sum / max(1, self.seen_samples))
+        results['utility'] = rms_loss * float(trained_unique_samples)
         results['update_weight'] = model_param
         results['wall_duration'] = 0
 
@@ -212,8 +216,8 @@ class TorchClient(ClientBase):
                 loss = loss.mean()
 
             temp_loss = sum(loss_list) / float(len(loss_list))
-            self.loss_squared = sum([l ** 2 for l in loss_list]
-                                    ) / float(len(loss_list))
+            self.loss_sq_sum += sum(l ** 2 for l in loss_list)
+            self.seen_samples += len(loss_list)
             # only measure the loss of the first epoch
             if self.completed_steps < len(client_data):
                 if self.epoch_train_loss == 1e-4:
