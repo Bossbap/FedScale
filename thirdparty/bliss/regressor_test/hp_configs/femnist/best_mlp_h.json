@@ -1,0 +1,806 @@
+[
+  {
+    "rmse": 81.61942725641566,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.62185957554256,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.65357822457513,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.66022343803537,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.85095971318889,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.88556934802223,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.9036817561197,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 81.93372835766871,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.04907473221246,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.0548477285989,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.09533757578924,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.10176145296352,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.11939071719488,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.12841952308253,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.12949227623083,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.13679910942176,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.16791706292798,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.1754987094909,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.1948304991103,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.19559401896097,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.22999372508708,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.24051581812984,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.24489374447161,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.24539343212768,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.25061509933674,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.28417540000153,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.3069331839422,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.32780583223669,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.32995219120828,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.3352939599627,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.3452939267374,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.34754300124457,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.3487063076002,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.35247104790885,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.52010742669056,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.53893987428302,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.56037556047896,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.58418290590642,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.60519892175425,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.6075369408287,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 82.99983406315023,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.01891506043026,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.02226039215017,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.02691477394188,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.16124333585775,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.16590836359786,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      128
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.49557941059409,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.5223022875728,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.55126919471829,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.5563274211909,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0003,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.91637914016908,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 83.93406939233503,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64,
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 84.45687581569543,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 84.48221050888876,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 84.79521368389292,
+    "alpha": 0.001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 84.8339186981307,
+    "alpha": 0.0001,
+    "batch_size": 32,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 86.99028425688047,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 87.06644688620688,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      64
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 88.90199644740461,
+    "alpha": 0.001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  },
+  {
+    "rmse": 88.92220900981076,
+    "alpha": 0.0001,
+    "batch_size": 64,
+    "early_stopping": true,
+    "hidden_layer_sizes": [
+      32
+    ],
+    "learning_rate_init": 0.0001,
+    "max_iter": 150,
+    "n_iter_no_change": 10,
+    "validation_fraction": 0.1
+  }
+]

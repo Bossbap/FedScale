@@ -4,5 +4,6 @@ __pycache__/
 logs/
 
 benchmark/dataset
+thirdparty/bliss/regressor_test/datasets/*
 
 .DS_Store
