@@ -303,6 +303,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
         stragglers = [r for r in self.pending_client_results if r not in kept]
 
         # -- 4) timing statistics ----------------------------------------
+        self.tasks_round = len(kept)
         self.round_duration        = max(r["wall_duration"] for r in kept) if kept else 0.0
         self.flatten_client_duration = np.array([r["wall_duration"] for r in kept])
         # virtual clock for *all* uploads (needed for feedback on stragglers)
@@ -554,12 +555,8 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             dur_for_feedback = self.virtual_client_clock[cid]
             
         # --------------- new DEBUG log ----------------------------------
-        if self.args.adaptive_training:
-            logging.info("[aggregator] client %s finished, wall_duration = %.2f s  (round %d)",
-                         cid, dur_for_feedback, self.round)
-        else:
-            logging.info("[aggregator] client %s finished, simulated_duration = %.2f s  (round %d)",
-                         cid, dur_for_feedback, self.round)
+        logging.info("[aggregator] client %s finished, simulated_duration = %.2f s",
+                        cid, dur_for_feedback)
 
         # ------------------------------------------------ feedback --------
         self.client_manager.register_feedback(
@@ -657,7 +654,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             )
         )
 
-    def     efault_task_config(self):
+    def update_default_task_config(self):
         """Update the default task configuration after each round"""
         if self.round % self.args.decay_round == 0:
             self.args.learning_rate = max(

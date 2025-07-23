@@ -81,7 +81,6 @@ class ClientManager:
                 self.ucb_sampler.register_client(client_id, feedbacks=feedbacks)
             elif self.mode == "bliss":
                 feedbacks = {
-                    'reward': min(size, self.args.local_steps * self.args.batch_size),
                     'metadata': {
                         'osVersion': cd['osVersion'],
                         'model': cd['model'],

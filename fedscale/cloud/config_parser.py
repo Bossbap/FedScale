@@ -198,7 +198,7 @@ parser.add_argument("--linreg_g_positive",      action="store_true")
 parser.add_argument("--linreg_h_fit_intercept", action="store_true")
 parser.add_argument("--linreg_h_positive",      action="store_true")
 
-parser.add_argument("--collect_data",         type=bool,   default=False, help="Used to collect train data for regressors in thirdpary/bliss/regressor_test/datasets to experiment on h and g regressors")
+parser.add_argument("--collect_data",            type=bool,   default=False, help="Used to collect train data for regressors in thirdpary/bliss/regressor_test/datasets to experiment on h and g regressors")
 
 
 

@@ -141,12 +141,12 @@ class AdaptiveTorchClient(TorchClient):
             loss = crit(model(data), target)
 
         # ensure scalar loss for autograd
-        if loss.dim() != 0:                 # e.g. reduction='none'
-            loss_vec  = loss.detach()
-            loss_mean = loss_vec.mean()
-        else:                               # already scalar
+        if loss.dim() != 0:                 
+            loss_mean = loss.mean()         
+            loss_vec  = loss.detach().view(-1)
+        else:                               
+            loss_mean = loss                 
             loss_vec  = loss.detach().view(1)
-            loss_mean = loss_vec[0]
 
 
         optim.zero_grad()
@@ -187,15 +187,10 @@ class AdaptiveTorchClient(TorchClient):
             # snapshot of initial weights for delta calculation
             w0 = [p.data.clone() for p in model.parameters()]
             data_it = iter(client_data)
-
-            # ---------------- LOG BUFFERS ---------------------------------
-            est_iters_hist, est_tcomm_hist, speed_hist, bw_hist = [], [], [], []   # phase‑2
-            time_hist_2,   budget_hist_2   = [], []                                # NEW
-            gain_comm_hist = []                                                    # phase‑3
-            time_hist_3,   budget_hist_3   = [], []                                # NEW
-            speed_hist_3,  bw_hist_3       = [], []                                # NEW
     
-            # ----------------- PHASE 2 : coarse fit‑as‑many ----------------
+            # ---------------------------------------------------------------------------------------------------
+            # --------  PHASE 2 : coarse fit‑as‑many ------------------------------------------------------------
+            # ---------------------------------------------------------------------------------------------------
             while True:
 
                 speed_now   = compute_speed(trace, curr_t, round_noise)
@@ -208,13 +203,6 @@ class AdaptiveTorchClient(TorchClient):
     
                 max_iters   = int((budget - t_comm_est) // t_comp_est)
 
-                # ---- log the estimate -----------------------------------
-                est_iters_hist.append(max_iters)
-                est_tcomm_hist.append(t_comm_est)
-                speed_hist.append(speed_now)
-                bw_hist.append(up_rate_now)
-                time_hist_2.append(curr_t)
-                budget_hist_2.append(budget)
 
                 if max_iters < recheck:
                     break                            # switch to phase 3
@@ -255,7 +243,9 @@ class AdaptiveTorchClient(TorchClient):
                 if max_iters == recheck:
                     break
     
-            # ----------------- PHASE 3 : fine trade‑off --------------------
+            # ---------------------------------------------------------------------------------------------------
+            # --------  PHASE 3 : fine trade-off ----------------------------------------------------------------
+            # ---------------------------------------------------------------------------------------------------
             prev_comp_norm = 0.0
             steps_done_bis = 0
     
@@ -266,11 +256,6 @@ class AdaptiveTorchClient(TorchClient):
                 
                 curr_t  += elapsed
                 budget  -= elapsed
-
-                time_hist_3.append(curr_t)
-                budget_hist_3.append(budget)
-                speed_hist_3.append(speed_now)       # reuse speed_now you already compute
-                bw_hist_3.append(up_rate_now)
     
                 try:
                     batch = next(data_it)
@@ -298,7 +283,6 @@ class AdaptiveTorchClient(TorchClient):
     
                 # ---- delta   norms ---------------------------------------
                 delta       = [p.data - w0i for p, w0i in zip(model.parameters(), w0)]
-                full_norm   = self._l2_norm(delta)
     
                 up_rate_now = bandwidth(trace, curr_t)
                 t_comm_full = (conf.model_size * clock / reduction) / max(up_rate_now, 1e-6)
@@ -307,16 +291,16 @@ class AdaptiveTorchClient(TorchClient):
                 
                 comp_delta  = compress_topk(delta, keep_frac)    # Cₙ₊¹(Δₙ₊¹)
                 comp_norm   = self._l2_norm(comp_delta)          # = Uₙ₊¹
-
+                
                 gain_comm   = comp_norm - prev_comp_norm         # Uₙ₊¹ − Uₙ
-                # Optional EWMA smoothing
-                # ewma = λ * ewma + (1-λ) * gain_comm
-                # gain_comm = ewma
+
+                # With EWMA smoothing
+                ewma = λ * ewma + (1-λ) * gain_comm
+                gain_comm = ewma
 
                 if gain_comm <= 0 or keep_frac <= min_frac or budget <= 0:
                     break
 
-                gain_comm_hist.append(gain_comm)
                 prev_comp_norm = comp_norm
     
             # -------------------- upload simulation -----------------------
@@ -361,7 +345,7 @@ class AdaptiveTorchClient(TorchClient):
                 "update_weight": update_dict,
                 "wall_duration": total_wall,
             }
-        except Exception:                      # <-- NEW
+        except Exception:
             # Full stack‑trace into the executor log
             logging.error("[adaptive_torch_client] EXCEPTION on client %s\n%s",
                           conf.client_id, traceback.format_exc())
@@ -373,13 +357,13 @@ class AdaptiveTorchClient(TorchClient):
                 "trained_size" : 0,
                 "success"      : False,
                 "utility"      : 0.0,
-                "update_weight": {},      # empty so payload is tiny
+                "update_weight": {},
                 "wall_duration": 0.0,
             }
 
 
 # ---------------------------------------------------------------------- #
-#  Simple upload simulator re-using _simulate_data_phase logic ---------- #
+# Simple upload simulator re-using _simulate_data_phase logic ---------- #
 # ---------------------------------------------------------------------- #
 class ClientUploadSimulator:
     @staticmethod

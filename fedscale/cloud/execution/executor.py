@@ -212,7 +212,7 @@ class Executor(object):
         client_id, train_config = config["client_id"], config["task_config"]
 
         if "model" not in config or not config["model"]:
-            raise "The \'model\' object must be a non-null value in the training config."
+            raise ValueError("The 'model' object must be provided and non-null in the training config.")
         client_conf = self.override_conf(train_config)
         try:
             train_res = self.training_handler(
@@ -220,8 +220,8 @@ class Executor(object):
             )
         except Exception:
             logging.exception("[executor %s] Uncaught exception, cid=%d", 
-                            self.executor_id, cid)
-            train_res = {"client_id": cid, "success": False}
+                            self.executor_id, client_id)
+            train_res = {"client_id": client_id, "success": False}
 
 
         # Report execution completion meta information
@@ -325,7 +325,7 @@ class Executor(object):
                     return AdaptiveTorchClient(conf)
                 else:
                     return TorchClient(conf)
-        raise "Currently, FedScale supports tensorflow and pytorch."
+        raise NotImplementedError("Currently, FedScale supports only TensorFlow and PyTorch engines.")
 
     def training_handler(self, client_id, conf, model):
         """Train model given client id

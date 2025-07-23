@@ -3,7 +3,7 @@ import numpy as np
 
 
 class YoGi:
-    def __init__(self, eta=1e-2, tau=1e-3, beta=0.9, beta2=0.99):
+    def __init__(self, eta=0.5, tau=1e-3, beta=0.9, beta2=0.99):
         self.eta = eta
         self.tau = tau
         self.beta = beta
