@@ -1,123 +1,161 @@
-<p align="center">
-<img src="./docs/imgs/FedScale-logo.png" width="300" height="55"/>
-</p>
+# Bliss
 
-[![](https://img.shields.io/badge/FedScale-Homepage-orange)](https://fedscale.ai/)
-[![](https://img.shields.io/badge/Benchmark-Submit%20Results-brightgreen)](https://fedscale.ai/docs/leader_overview)
-[![](https://img.shields.io/badge/FedScale-Join%20Slack-blue)](https://join.slack.com/t/fedscale/shared_invite/zt-uzouv5wh-ON8ONCGIzwjXwMYDC2fiKw)
+> **Bliss** is a lightweight, deployment‑ready client selection strategy for **federated learning (FL)** that minimizes *wall‑clock time‑to‑accuracy*.
+> **Sourced from and built on \[FedScale]**, keeping the same CLI and runtime so you can run jobs exactly as you would on FedScale.
 
-**FedScale is a scalable and extensible open-source federated learning (FL) engine and benchmark**. 
+---
 
-FedScale ([fedscale.ai](https://fedscale.ai/)) provides high-level APIs to implement FL algorithms, deploy and evaluate them at scale across diverse hardware and software backends. 
-FedScale also includes the largest FL benchmark that contains FL tasks ranging from image classification and object detection to language modeling and speech recognition. 
-Moreover, it provides datasets to faithfully emulate FL training environments where FL will realistically be deployed.
+## What is Bliss?
 
+Bliss co‑designs **predictive sampling**, **adaptive local training**, and **server‑side coordination**:
+
+* Before each round, the server gathers **real‑time system features** (CPU, network, battery) and **historical feedback** (past utility, past success) per client, feeds them to a regressor, and **predicts next‑round utility** to guide sampling.
+* Selected clients run **adaptive local training** that trades communication for computation, removing the need for post‑hoc system penalties in the utility function.
+* We integrate **Oort‑style robustness** (server pacer for round deadlines, utility clipping, outlier removal) so the components reinforce one another.
+
+Bliss lives alongside FedScale so you can use all of FedScale’s datasets, models, and runtime while swapping in Bliss for client selection.
+
+---
 
 ## Getting Started
 
-### Quick Installation (Linux)
+### 1) Install (Conda)
 
-You can simply run `install.sh`.
+> Bliss provides two environments: **CPU** and **GPU**. Pick one.
 
-```
-source install.sh # Add `--cuda` if you want CUDA 
+```bash
+# From the repo root (this project alongside FedScale code)
+conda env create -f environment_CPU.yml    # CPU-only setup
+# or
+conda env create -f environment_GPU.yml    # GPU-enabled setup
+
+# Activate (the YAML sets the environment name, typically "bliss")
+conda activate bliss
+
+# Install FedScale (editable) from the checked-out source
 pip install -e .
 ```
 
-Update `install.sh` if you prefer different versions of conda/CUDA.
+> If you plan to use GPUs, install a compatible **NVIDIA CUDA toolkit/driver** for your hardware.
 
-### Installation from Source (Linux/MacOS)
+### 2) Install dataset
 
-If you have [Anaconda](https://www.anaconda.com/products/distribution#download-section) installed and cloned FedScale, here are the instructions.
-```
-cd FedScale
+Run:
 
-# Please replace ~/.bashrc with ~/.bash_profile for MacOS
-FEDSCALE_HOME=$(pwd)
-echo export FEDSCALE_HOME=$(pwd) >> ~/.bashrc 
-echo alias fedscale=\'bash $FEDSCALE_HOME/fedscale.sh\' >> ~/.bashrc 
-conda init bash
-. ~/.bashrc
-
-conda env create -f environment.yml
-conda activate fedscale
-pip install -e .
+```bash
+bash benchmark/dataset/download.sh download <name_of_dataset>
 ```
 
-Finally, install NVIDIA [CUDA 10.2](https://developer.nvidia.com/cuda-downloads) or above if you want to use FedScale with GPU support.
+Inspect `benchmark/dataset/download.sh` to configure the download and to see the available dataset names.
 
 
-### Tutorials
+### 3) Run a job (same flow as FedScale)
 
-Now that you have FedScale installed, you can start exploring FedScale following one of these introductory tutorials.
+From the **FedScale repo root**, submit a job with your config:
 
-1. [Explore FedScale datasets](./docs/Femnist_stats.md)
-2. [Deploy your FL experiment](./docs/tutorial.md)
-3. [Implement an FL algorithm](./examples/README.md)
-4. [Deploy FL on smartphones](./fedscale/edge/android/README.md)
+```bash
+python docker/driver.py submit configs/<your_config>.yml
+```
 
-## FedScale Datasets
+* Your `configs/*.yml` file holds runtime args and hyperparameters (e.g., `ps_ip`, `worker_ips`, GPU counts, `batch_size`, `sampling_strategy`, `gradient_policy`, and related hparams).
+* To use Bliss sampling, set the sampling strategy to Bliss in your config (see examples in `configs/`).
 
-***We are adding more datasets! Please contribute!***
+---
 
-FedScale consists of 20+ large-scale, heterogeneous FL datasets and 70+ various [models](./fedscale/utils/models/cv_models/README.md), covering computer vision (CV), natural language processing (NLP), and miscellaneous tasks. 
-Each one is associated with its training, validation, and testing datasets. 
-We acknowledge the contributors of these raw datasets. Please go to the `./benchmark/dataset` directory and follow the dataset [README](./benchmark/dataset/README.md) for more details.
+## How it works (non‑adaptive mode)
 
-## FedScale Runtime
-FedScale Runtime is an scalable and extensible deployment as well as evaluation platform to simplify and standardize FL experimental setup and model evaluation. 
-It evolved from our prior system, [Oort](https://github.com/SymbioticLab/Oort), which has been shown to scale well and can emulate FL training of thousands of clients in each round.
+When `adaptive_training: false` in your config, the execution is:
 
-Please go to `./fedscale/cloud` directory and follow the [README](./fedscale/cloud/README.md) to set up FL training scripts and the [README](./fedscale/edge/android/README.md) for practical on-device deployment.
+1. **`docker/driver.py`**
 
+   * Loads config, extracts hardware args (`ps_ip`, `worker_ips`, GPU counts), builds `executor_configs`, launches **executors** on the distributed machines, then launches **`aggregator.py`**.
 
-## Repo Structure
+2. **`aggregator.py` (server)**
+
+   * Creates queues to communicate with executors (a global round queue and per‑client callback queue via `event_monitor()`).
+   * Runs the main loop tracking simulated wall‑clock time.
+   * Uses **`ClientManager`** (from `client_manager.py`) to:
+
+     * Check client availability per round,
+     * Select participants,
+     * Track per‑round performance and metadata via **`client_metadata.py`**.
+   * Interacts with **`thirdparty/bliss/oort.py`** (Oort implementation) and **`thirdparty/bliss/bliss.py`** (Bliss selection logic).
+
+3. **`executor.py` (clients)**
+
+   * Initializes frameworks (PyTorch/TensorFlow wrappers), partitions data, connects to the server over gRPC.
+   * Enters an event loop: sleeps, `client_ping()` when idle, and executes server‑sent events to **update/train/test/shutdown**.
+   * For PyTorch runs (`conf.engine == commons.PYTORCH`), creates a **`TorchClient`** from `torch_client.py` which performs the actual local train/test.
+
+> **Adaptive mode:** when `adaptive_training: true`, some responsibilities shift to `adaptive_torch_client.py`. (Out of scope here; see code comments for details.)
+
+---
+
+## Repo Structure (Bliss additions)
 
 ```
 Repo Root
-|---- fedscale          # FedScale source code
-  |---- cloud           # Core of FedScale service
-  |---- utils           # Auxiliaries (e.g, model zoo and FL optimizer)
-  |---- edge            # Backends for practical deployments (e.g., mobile)
-  |---- dataloaders     # Data loaders of benchmarking dataset
+|---- configs/              # All configuration files used for experiments
+|---- notebooks/            # Notebooks for analysis and figure generation
+|---- images/               # Figures used in the report/README
+|---- run_global_loggings/  # Aggregated logs from evaluation runs
 
-|---- docker            # FedScale docker and container deployment (e.g., Kubernetes)
-|---- benchmark         # FedScale datasets and configs
-  |---- dataset         # Benchmarking datasets
-  |---- configs         # Example configurations
-
-|---- scripts           # Scripts for installing dependencies
-|---- examples          # Examples of implementing new FL designs
-|---- docs              # FedScale tutorials and APIs
+# FedScale runtime (selected)
+|---- docker/
+|---- fedscale/
+|     |---- cloud/          # Aggregator, Executors, Client manager, etc.
+|     |---- edge/           
+|     |---- utils/
+|     |---- dataloaders/
+|     |---- utils
+|---- thirdparty/bliss/
+      |---- bliss.py        # Bliss sampling
+      |---- oort.py         # Oort strategy (for robustness mechanisms)
 ```
 
-## References
-Please read and/or cite as appropriate to use FedScale code or data or learn more about FedScale.
+---
 
-```bibtex
-@inproceedings{fedscale-icml22,
-  title={{FedScale}: Benchmarking Model and System Performance of Federated Learning at Scale},
-  author={Fan Lai and Yinwei Dai and Sanjay S. Singapuram and Jiachen Liu and Xiangfeng Zhu and Harsha V. Madhyastha and Mosharaf Chowdhury},
-  booktitle={International Conference on Machine Learning (ICML)},
-  year={2022}
-}
+## Configuration & Examples
+
+* Start from the provided files in `configs/` and customize:
+
+  * **Cluster:** `ps_ip`, `worker_ips`, `num_gpus` per host.
+  * **Training:** `dataset`, `model`, `batch_size`, `lr`, `rounds`, `deadline`.
+  * **Selection:** `sampling_strategy: bliss` (or oort, random, etc.), related hparams.
+  * **Execution:** `engine: pytorch`, `adaptive_training: false` (for the flow above).
+
+Run with:
+
+```bash
+python docker/driver.py submit configs/<experiment>.yml
 ```
 
-and  
+Logs and metrics will appear in your run‑specific directories, and global summaries in `run_global_loggings/`.
 
-```bibtex
-@inproceedings{oort-osdi21,
-  title={Oort: Efficient Federated Learning via Guided Participant Selection},
-  author={Fan Lai and Xiangfeng Zhu and Harsha V. Madhyastha and Mosharaf Chowdhury},
-  booktitle={USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
-  year={2021}
-}
-```
+---
 
-## Contributions and Communication
-Please submit [issues](https://github.com/SymbioticLab/FedScale/issues) or [pull requests](https://github.com/SymbioticLab/FedScale/pulls) as you find bugs or improve FedScale.
+## Results & Artifacts
 
-For each submission, please add unit tests to the corresponding changes and make sure that all unit tests pass by running `pytest fedscale/tests`.
+* **Figures:** see `images/` (generated from the notebooks).
+* **Notebooks:** see `notebooks/` for end‑to‑end analysis and plot generation.
+* **Logs:** see `run_global_loggings/` for consolidated evaluation logs.
 
-If you have any questions or comments, please join our [Slack](https://join.slack.com/t/fedscale/shared_invite/zt-uzouv5wh-ON8ONCGIzwjXwMYDC2fiKw) channel, or email us ([fedscale@googlegroups.com](mailto:fedscale@googlegroups.com)). 
+---
 
+## Acknowledgments & Citation
+
+This project is **sourced from FedScale** and integrates with its runtime and datasets. If you use Bliss, please also cite:
+
+* **FedScale** (ICML’22) and **Oort** (OSDI’21) as appropriate for runtime/selection baselines.
+
+---
+
+## Contributing & Questions
+
+Issues and PRs are welcome.
+For FedScale runtime questions, the FedScale Slack is active (badge above).
+For Bliss‑specific questions, open a GitHub issue in this repo.
+
+---
+
+**Happy federating!** 🎉
