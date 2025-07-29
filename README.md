@@ -144,17 +144,13 @@ Logs and metrics will appear in your run‑specific directories, and global summ
 
 ## Acknowledgments & Citation
 
-This project is **sourced from FedScale** and integrates with its runtime and datasets. If you use Bliss, please also cite:
-
-* **FedScale** (ICML’22) and **Oort** (OSDI’21) as appropriate for runtime/selection baselines.
+This project is **sourced from FedScale** and integrates with its runtime and datasets.
 
 ---
 
 ## Contributing & Questions
 
-Issues and PRs are welcome.
-For FedScale runtime questions, the FedScale Slack is active (badge above).
-For Bliss‑specific questions, open a GitHub issue in this repo.
+Issues and PRs are welcome - open a GitHub issue in this repo.
 
 ---
 
