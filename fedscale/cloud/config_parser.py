@@ -126,6 +126,12 @@ parser.add_argument("--noise_factor", type=float, default=0.1)
 parser.add_argument("--clip_threshold", type=float, default=3.0)
 parser.add_argument("--target_delta", type=float, default=0.0001)
 
+# Round checkpoint
+parser.add_argument('--checkpoint_interval', type=int, default=0,
+                    help='Save a resumable checkpoint every <N> rounds (0 = off)')
+parser.add_argument('--resume_from', type=str, default='',
+                    help='Path to a .pkl checkpoint to resume from')
+
 # for Oort
 parser.add_argument("--pacer_delta", type=float, default=5)
 parser.add_argument("--pacer_step", type=int, default=20)

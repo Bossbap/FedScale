@@ -149,6 +149,10 @@ class _training_selector(object):
         self.successfulClients = set()
         self.blacklist = None
 
+        self._last_round_threshold = self.round_threshold
+        self._last_round_prefer_duration = None
+
+
         np2.random.seed(sample_seed)
 
     def register_client(self, client_id, feedbacks):
@@ -184,27 +188,40 @@ class _training_selector(object):
         self.successfulClients = set()
 
         if self.training_round >= 2 * self.args.pacer_step and self.training_round % self.args.pacer_step == 0:
-
             utilLastPacerRounds = sum(self.exploitUtilHistory[-2*self.args.pacer_step:-self.args.pacer_step])
             utilCurrentPacerRounds = sum(self.exploitUtilHistory[-self.args.pacer_step:])
 
-            # Cumulated statistical utility becomes flat, so we need a bump by relaxing the pacer
-            if abs(utilCurrentPacerRounds - utilLastPacerRounds) <= utilLastPacerRounds * 0.1:
+            # guard for zero baseline to avoid division weirdness
+            baseline = max(utilLastPacerRounds, 1e-12)
+            rel_change = abs(utilCurrentPacerRounds - utilLastPacerRounds) / baseline
+
+            # Plateau → relax threshold
+            if rel_change <= 0.1:
+                old = self.round_threshold
                 self.round_threshold = min(100., self.round_threshold + self.args.pacer_delta)
                 self.last_util_record = self.training_round - self.args.pacer_step
-                logging.debug("Training selector: Pacer changes at {} to {}".format(self.training_round, self.round_threshold))
 
-            # change sharply -> we decrease the pacer step
-            elif abs(utilCurrentPacerRounds - utilLastPacerRounds) >= utilLastPacerRounds * 5:
+                logging.info(
+                    "[Oort.Pacer] Plateau at round %d: sum(util) last=%g, curr=%g, Δ/last=%0.2f%% → "
+                    "relax threshold %0.1f%% → %0.1f%%",
+                    self.training_round, utilLastPacerRounds, utilCurrentPacerRounds, 100.0*rel_change,
+                    old, self.round_threshold
+                )
+                self._last_round_threshold = self.round_threshold
+
+            # Sharp improvement → tighten threshold
+            elif rel_change >= 5.0:
+                old = self.round_threshold
                 self.round_threshold = max(self.args.pacer_delta, self.round_threshold - self.args.pacer_delta)
                 self.last_util_record = self.training_round - self.args.pacer_step
-        #         logging.debug("Training selector: Pacer changes at {} to {}".format(self.training_round, self.round_threshold))
 
-        #     logging.debug("Training selector: utilLastPacerRounds {}, utilCurrentPacerRounds {} in round {}"
-        #         .format(utilLastPacerRounds, utilCurrentPacerRounds, self.training_round))
-
-        # logging.info("Training selector: Pacer {}: lastExploitationUtil {}, lastExplorationUtil {}, last_util_record {}".
-        #                 format(self.training_round, lastExploitationUtil, lastExplorationUtil, self.last_util_record))
+                logging.info(
+                    "[Oort.Pacer] Surge at round %d: sum(util) last=%g, curr=%g, Δ/last=%0.2f%% → "
+                    "tighten threshold %0.1f%% → %0.1f%%",
+                    self.training_round, utilLastPacerRounds, utilCurrentPacerRounds, 100.0*rel_change,
+                    old, self.round_threshold
+                )
+                self._last_round_threshold = self.round_threshold
 
     def update_client_util(self, client_id, feedbacks):
         '''
@@ -278,6 +295,17 @@ class _training_selector(object):
 
         moving_reward, staleness, allloss = [], [], {}
 
+        prev_pd = self._last_round_prefer_duration
+        if (prev_pd is None) or (abs(self.round_prefer_duration - prev_pd) > 1e-9):
+            logging.info(
+                "[Oort.Pacer] round=%d: preferred_duration=%s (threshold=%0.1f%%)%s",
+                self.training_round,
+                ("inf" if self.round_prefer_duration == float('inf') else f"{self.round_prefer_duration:.3f}s"),
+                self.round_threshold,
+                ("" if prev_pd is None else f", was {prev_pd:.3f}s" if prev_pd != float('inf') else ", was inf")
+            )
+            self._last_round_prefer_duration = self.round_prefer_duration
+
         for client_id in orderedKeys:
             if self.totalArms[client_id]['reward'] > 0:
                 creward = self.totalArms[client_id]['reward']
@@ -295,7 +323,7 @@ class _training_selector(object):
                 numOfExploited += 1
 
                 sc = (creward - min_reward)/float(range_reward) \
-                    + math.sqrt(0.1*math.log(cur_time)/self.totalArms[key]['time_stamp']) # temporal uncertainty
+                    + math.sqrt(0.1*math.log(cur_time)/(self.totalArms[key]['time_stamp'] + 1)) # temporal uncertainty
 
                 # sc = (creward - min_reward)/float(range_reward) \
                 #     + self.alpha*((cur_time-self.totalArms[key]['time_stamp']) - min_staleness)/float(range_staleness)
@@ -368,10 +396,6 @@ class _training_selector(object):
             _staleness = self.alpha*((cur_time-self.totalArms[client_id]['time_stamp']) - min_staleness)/float(range_staleness) #math.sqrt(0.1*math.log(cur_time)/max(1e-4, self.totalArms[client_id]['time_stamp']))
             top_k_score.append((self.totalArms[client_id], [_score, _staleness]))
 
-        # logging.info("At round {}, UCB exploited {}, augment_factor {}, exploreLen {}, un-explored {}, exploration {}, round_threshold {}, sampled score is {}"
-        #     .format(cur_time, numOfExploited, augment_factor/max(1e-4, exploitLen), exploreLen, len(self.unexplored), self.exploration, self.round_threshold, top_k_score))
-        # logging.info("At time {}, all rewards are {}".format(cur_time, allloss))
-
         return pickedClients
 
     def get_median_reward(self):
@@ -399,3 +423,12 @@ class _training_selector(object):
         _avg = sum(aList)/max(1e-4, float(len(aList)))
 
         return float(_max), float(_min), float(_range), float(_avg), float(clip_value)
+    
+    def get_pacer_state(self):
+        return {
+            "algo": "oort",
+            "training_round": int(self.training_round),
+            "round_threshold": float(self.round_threshold),
+            "pacer_step": int(self.args.pacer_step),
+            "pacer_delta": float(self.args.pacer_delta),
+        }

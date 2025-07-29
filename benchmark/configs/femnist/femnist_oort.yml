@@ -2,18 +2,15 @@
 
 # ========== Cluster configuration ========== 
 # ip address of the parameter server (need 1 GPU process)
-ps_ip: 129.104.252.45
+ps_ip: 129.104.252.32
 
 # ip address of each worker:# of available gpus process on each gpu in this node
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips:
-    - 129.104.253.44:[4]
-    - 129.104.254.52:[4]
-    - 129.104.252.54:[4]
+    - 129.104.252.32:[3]
     - 129.104.252.53:[4]
     - 129.104.252.56:[4]
-    - 129.104.252.32:[4]
     - 129.104.252.39:[4]
     - 129.104.252.38:[4]
 
@@ -47,6 +44,8 @@ job_conf:
     - use_cuda: True
     - num_loaders: 2
     - clock_factor: 30
+    - checkpoint_interval: 15
+    # - resume_from: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/logs/femnist/0724_184558/aggregator/checkpoint_round90.pkl
     
     - model: resnet18             # NOTE: Please refer to our model zoo README and use models for these small image (e.g., 32x32x3) inputs
     - gradient_policy: fed-prox

@@ -5,5 +5,7 @@ logs/
 
 benchmark/dataset
 thirdparty/bliss/regressor_test/datasets/*
+run_global_loggings/old/*
+run_global_loggings/femnist/tmp/*
 
 .DS_Store

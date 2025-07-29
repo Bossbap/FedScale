@@ -142,7 +142,10 @@ class _training_selector:
         client['last_success'] = client['success']
 
         # EMA update
-        client['utility'] = self.ema_alpha * util + (1 - self.ema_alpha) * client['last_utility']
+        # client['utility'] = self.ema_alpha * util + (1 - self.ema_alpha) * client['last_utility']
+
+        # No EMA update
+        client['utility'] = util
 
         # No EMA
         # client['utility'] = util
@@ -600,6 +603,15 @@ class _training_selector:
 
         # ➎  Expose new budget to the rest of FedScale
         self.args.t_budget = self.t_budget
+
+    def get_pacer_state(self):
+        return {
+            "algo": "bliss",
+            "round": int(self.round),
+            "t_budget": float(self.t_budget),
+            "pacer_step": int(self.pacer_step),
+            "pacer_delta": float(self.pacer_delta),
+        }
 
     def get_median_reward(self) -> float:
         utils = [c['utility'] for c in self.clients.values()]

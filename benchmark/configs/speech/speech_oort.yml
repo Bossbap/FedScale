@@ -46,6 +46,7 @@ job_conf:
     - use_cuda: True
     - num_loaders: 2
     - clock_factor: 30
+    - checkpoint_interval: 20
 
     - model: resnet34                            # Models: e.g., shufflenet_v2_x2_0, mobilenet_v2, resnet34, albert-base-v2
     - gradient_policy: fed-prox                 # {"fed-yogi", "fed-prox", "fed-avg"}, "fed-avg" by default
