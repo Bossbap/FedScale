@@ -189,6 +189,10 @@ parser.add_argument(
     help="Regressor used for the h-model (utility refresh for seen clients)."
 )
 
+# ----- Common hyper-parameters ------------------------------------------
+parser.add_argument("--huber_delta", type=int, default=1000)
+parser.add_argument("--utility_ema_alpha", type=float, default=0.7)
+
 # ----- XGBoost --------------------------------------------------------------
 parser.add_argument("--xgboost_g_n_estimators",           type=int,   default=300)
 parser.add_argument("--xgboost_g_learning_rate",          type=float, default=0.05)

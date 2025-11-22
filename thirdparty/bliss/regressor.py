@@ -11,7 +11,7 @@ import numpy as np
 class Regressor:
     """
     Thin wrapper exposing the *same* `.fit` / `.predict` API for several
-    back-ends.
+    back-xds.
 
     Parameters
     ----------

@@ -5,6 +5,7 @@ from random import Random
 from typing import List, Tuple, Dict, Optional
 import numpy as np
 import math
+from pathlib import Path
 
 from fedscale.cloud.internal.client_metadata import ClientMetadata
 
@@ -49,6 +50,7 @@ class ClientManager:
         # Ensure deterministic order for modulo mapping even if the pickle is an OrderedDict
         self.clients_keys = sorted(self.clients.keys())
         self._base_pool_size = len(self.clients_keys)
+        self._cluster_ranks = self._load_cluster_ranks()
         # Noise hyperparams (kept local to ClientManager; can be surfaced to args if desired)
         self._noise_std = 0.07   # truncated N(0, 0.07)
         self._noise_lo  = -1.0   # truncate to [-1, 1]
@@ -61,6 +63,41 @@ class ClientManager:
         }
 
         self._last_online_log_clock: Optional[float] = None
+
+    def _load_cluster_ranks(self) -> Dict[int, int]:
+        """Load {client_id -> cluster_rank} mapping from the canonical dataset."""
+        cluster_map: Dict[int, int] = {}
+        cluster_file = Path("benchmark/dataset/data/clients.pkl")
+        if not cluster_file.exists():
+            logging.warning(
+                "[ClientManager] cluster-rank file missing at %s – defaulting to rank 0",
+                cluster_file,
+            )
+            return cluster_map
+        try:
+            with cluster_file.open("rb") as fin:
+                data = pickle.load(fin)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logging.warning(
+                "[ClientManager] unable to load cluster ranks from %s: %s",
+                cluster_file,
+                exc,
+            )
+            return cluster_map
+
+        for key, rec in data.items():
+            rank = rec.get("cluster_rank")
+            if rank is None:
+                continue
+            try:
+                rank_val = int(rank)
+            except (TypeError, ValueError):
+                continue
+            cluster_map[int(key)] = rank_val
+            rec_id = rec.get("id")
+            if rec_id is not None:
+                cluster_map[int(rec_id)] = rank_val
+        return cluster_map
 
     def register_client(self, host_id: int, client_id: int, size: int) -> None:
         """Register client information to the client manager.
@@ -124,18 +161,24 @@ class ClientManager:
                 self.pyr_sampler.register_client(client_id, feedbacks=feedbacks)
 
             elif self.mode == "bliss":
+                cluster_rank = cd.get('cluster_rank')
+                if cluster_rank is None:
+                    cluster_rank = self._cluster_ranks.get(client_id)
+                if cluster_rank is None:
+                    base_id = cd.get('id')
+                    if base_id is not None:
+                        cluster_rank = self._cluster_ranks.get(int(base_id), None)
+                try:
+                    cluster_rank_val = int(cluster_rank)
+                except (TypeError, ValueError):
+                    cluster_rank_val = 0
+
                 feedbacks = {
                     'metadata': {
-                        'osVersion': cd['osVersion'],
-                        'model': cd['model'],
-                        'brand': cd['brand'],
-                        'os': cd['OS'],
                         'cpu_flops': cd['CPU_FLOPS'],
                         'gpu_flops': cd['GPU_FLOPS'],
-                        'internal_memory': cd['internal_memory'],
-                        'RAM': cd['RAM'],
                         'peak_throughput': cd['peak_throughput'],
-                        'battery': cd['battery']
+                        'cluster_rank': cluster_rank_val,
                     }
                 }
                 self.bliss_sampler.register_client(client_id, feedbacks)

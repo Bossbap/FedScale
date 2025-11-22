@@ -8,15 +8,12 @@ ps_ip: 129.104.253.34
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips: 
-    - 129.104.253.32:[4]
-    - 129.104.253.33:[4]
-    - 129.104.253.34:[4]
-    - 129.104.253.35:[4]
+    - 129.104.253.34:[3]
     - 129.104.253.37:[4]
-    - 129.104.253.38:[4]
-    - 129.104.253.47:[4]
-    - 129.104.252.50:[4]
-    - 129.104.252.53:[4]
+    - 129.104.253.40:[4]
+    - 129.104.253.42:[4]
+    - 129.104.253.43:[4]
+    - 129.104.253.44:[4]
 
 
 
@@ -53,6 +50,8 @@ job_conf:
     - clock_factor: 30
     - checkpoint_interval: 30
     # - resume_from: "/users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/logs/google_speech/ /checkpoints"
+
+    - collect_data: True
 
     - model: resnet34
     - gradient_policy: fed-prox

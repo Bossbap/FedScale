@@ -2,21 +2,20 @@
 
 # ========== Cluster configuration ========== 
 # ip address of the parameter server (need 1 GPU process)
-ps_ip: 129.104.254.40
+ps_ip: 129.104.252.34
 
 # ip address of each worker:# of available gpus process on each gpu in this node
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips:
-    - 129.104.254.32:[3]
-    - 129.104.254.33:[3]
-    - 129.104.254.34:[3]
-    - 129.104.254.35:[3]
-    - 129.104.254.36:[3]
-    - 129.104.254.37:[3]
-    - 129.104.254.38:[3]
-    - 129.104.254.39:[3]
-    - 129.104.254.40:[2]
+    - 129.104.252.34:[3]
+    - 129.104.254.32:[4]
+    - 129.104.254.33:[4]
+    - 129.104.254.34:[4]
+    - 129.104.254.35:[4]
+    - 129.104.254.37:[4]
+    - 129.104.254.38:[4]
+    - 129.104.254.40:[4]
 
 exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
 

@@ -1,0 +1,21 @@
+{
+  "model": "xgboost",
+  "regressor": "g",
+  "cv_splits": 2,
+  "n_jobs": 1,
+  "round_stride": 2,
+  "max_round": 400,
+  "rmse": 418.93236338920184,
+  "params": {
+    "early_stopping_rounds": 20,
+    "colsample_bytree": 1.0,
+    "huber_slope": 2000,
+    "learning_rate": 0.1,
+    "max_depth": 8,
+    "min_child_weight": 1,
+    "n_estimators": 200,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "subsample": 0.7
+  }
+}

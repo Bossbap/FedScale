@@ -1,0 +1,22 @@
+{
+  "model": "lightgbm",
+  "regressor": "g",
+  "cv_splits": 2,
+  "n_jobs": 1,
+  "round_stride": 2,
+  "max_round": 400,
+  "rmse": 303.53360977742454,
+  "params": {
+    "boosting_type": "gbdt",
+    "n_estimators": 200,
+    "alpha": 3000,
+    "colsample_bytree": 0.9,
+    "learning_rate": 0.2,
+    "min_child_samples": 5,
+    "num_leaves": 165,
+    "reg_alpha": 0.0,
+    "reg_lambda": 0,
+    "subsample": 0.9,
+    "subsample_freq": 1
+  }
+}
