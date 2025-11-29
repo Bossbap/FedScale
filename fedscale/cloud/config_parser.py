@@ -166,10 +166,14 @@ parser.add_argument("--dropout_b", type=float, default=0.6)
 parser.add_argument("--confidence_beta", type=float, default=0.7)
 
 # for Bliss
-parser.add_argument("--number_clients_to_refresh_utility", type=int, default=300)
-parser.add_argument("--number_clients_to_predict_utility", type=int, default=300)
-parser.add_argument("--amount_clients_predict_train_set", type=int, default=500)
-parser.add_argument("--amount_clients_refresh_train_set", type=int, default=500)
+# ----- Common hyper-parameters ------------------------------------------
+parser.add_argument("--utility_ema_alpha", type=float, default=0.6, help="EMA alpha for the weighted average of utility feature.")
+parser.add_argument("--recency_weighting_gamma", type=float, default=0.7, help="Gamma parameter for recency weighting of training samples in the regressors.")
+parser.add_argument("--sampling_temperature_eta", type=float, default=1.5, help="Temperature eta for softmax sampling of clients based on predicted utility.")
+parser.add_argument("--number_clients_to_refresh_utility", type=int, default=1000)
+parser.add_argument("--number_clients_to_predict_utility", type=int, default=1000)
+parser.add_argument("--amount_clients_predict_train_set", type=int, default=100000)
+parser.add_argument("--amount_clients_refresh_train_set", type=int, default=100000)
 parser.add_argument("--ema_alpha", type=float, default=0.7)
 
 # Regressor
@@ -177,7 +181,7 @@ parser.add_argument(
     "--g_model",
     type=str,
     default="xgboost",
-    choices=["xgboost", "mlp", "linreg"],
+    choices=["xgboost", "lightgbm", "catboost", "mlp", "linreg"],
     help="Regressor used for the g-model (utility prediction for unseen clients)."
 )
 
@@ -185,13 +189,9 @@ parser.add_argument(
     "--h_model",
     type=str,
     default="xgboost",
-    choices=["xgboost", "mlp", "linreg"],
+    choices=["xgboost", "lightgbm", "catboost", "mlp", "linreg"],
     help="Regressor used for the h-model (utility refresh for seen clients)."
 )
-
-# ----- Common hyper-parameters ------------------------------------------
-parser.add_argument("--huber_delta", type=int, default=1000)
-parser.add_argument("--utility_ema_alpha", type=float, default=0.7)
 
 # ----- XGBoost --------------------------------------------------------------
 parser.add_argument("--xgboost_g_n_estimators",           type=int,   default=300)
@@ -199,18 +199,76 @@ parser.add_argument("--xgboost_g_learning_rate",          type=float, default=0.
 parser.add_argument("--xgboost_g_max_depth",              type=int,   default=6)
 parser.add_argument("--xgboost_g_subsample",              type=float, default=0.8)
 parser.add_argument("--xgboost_g_colsample_bytree",       type=float, default=0.8)
-parser.add_argument("--xgboost_g_objective",              type=str,   default="reg:squarederror")
-parser.add_argument("--xgboost_g_n_jobs",                 type=int,   default=1)
+parser.add_argument("--xgboost_g_min_child_weight",       type=float, default=1.0)
+parser.add_argument("--xgboost_g_reg_alpha",              type=float, default=0.0)
+parser.add_argument("--xgboost_g_reg_lambda",             type=float, default=1.0)
+parser.add_argument("--xgboost_g_huber_slope",            type=float, default=2000.0)
+parser.add_argument("--xgboost_g_objective",              type=str,   default="reg:pseudohubererror")
 parser.add_argument("--xgboost_g_eval_metric",            type=str,   default="rmse")
+parser.add_argument("--xgboost_g_tree_method",            type=str,   default="hist")
+parser.add_argument("--xgboost_g_device",                 type=str,   default="cpu")
+parser.add_argument("--xgboost_g_early_stopping_rounds",  type=int,   default=0)
 
 parser.add_argument("--xgboost_h_n_estimators",           type=int,   default=300)
 parser.add_argument("--xgboost_h_learning_rate",          type=float, default=0.05)
 parser.add_argument("--xgboost_h_max_depth",              type=int,   default=6)
 parser.add_argument("--xgboost_h_subsample",              type=float, default=0.8)
 parser.add_argument("--xgboost_h_colsample_bytree",       type=float, default=0.8)
-parser.add_argument("--xgboost_h_objective",              type=str,   default="reg:squarederror")
-parser.add_argument("--xgboost_h_n_jobs",                 type=int,   default=1)
+parser.add_argument("--xgboost_h_min_child_weight",       type=float, default=1.0)
+parser.add_argument("--xgboost_h_reg_alpha",              type=float, default=0.0)
+parser.add_argument("--xgboost_h_reg_lambda",             type=float, default=1.0)
+parser.add_argument("--xgboost_h_huber_slope",            type=float, default=2000.0)
+parser.add_argument("--xgboost_h_objective",              type=str,   default="reg:pseudohubererror")
 parser.add_argument("--xgboost_h_eval_metric",            type=str,   default="rmse")
+parser.add_argument("--xgboost_h_tree_method",            type=str,   default="hist")
+parser.add_argument("--xgboost_h_device",                 type=str,   default="cpu")
+parser.add_argument("--xgboost_h_early_stopping_rounds",  type=int,   default=0)
+
+# ----- LightGBM --------------------------------------------------------------
+parser.add_argument("--lightgbm_g_boosting_type",        type=str,   default="gbdt")
+parser.add_argument("--lightgbm_g_objective",            type=str,   default="huber")
+parser.add_argument("--lightgbm_g_n_estimators",         type=int,   default=200)
+parser.add_argument("--lightgbm_g_num_leaves",           type=int,   default=63)
+parser.add_argument("--lightgbm_g_learning_rate",        type=float, default=0.05)
+parser.add_argument("--lightgbm_g_min_child_samples",    type=int,   default=8)
+parser.add_argument("--lightgbm_g_colsample_bytree",     type=float, default=0.9)
+parser.add_argument("--lightgbm_g_subsample",            type=float, default=0.9)
+parser.add_argument("--lightgbm_g_subsample_freq",       type=int,   default=1)
+parser.add_argument("--lightgbm_g_reg_alpha",            type=float, default=0.0)
+parser.add_argument("--lightgbm_g_reg_lambda",           type=float, default=1.0)
+parser.add_argument("--lightgbm_g_alpha",                type=float, default=2000.0)
+
+parser.add_argument("--lightgbm_h_boosting_type",        type=str,   default="gbdt")
+parser.add_argument("--lightgbm_h_objective",            type=str,   default="huber")
+parser.add_argument("--lightgbm_h_n_estimators",         type=int,   default=200)
+parser.add_argument("--lightgbm_h_num_leaves",           type=int,   default=63)
+parser.add_argument("--lightgbm_h_learning_rate",        type=float, default=0.05)
+parser.add_argument("--lightgbm_h_min_child_samples",    type=int,   default=8)
+parser.add_argument("--lightgbm_h_colsample_bytree",     type=float, default=0.9)
+parser.add_argument("--lightgbm_h_subsample",            type=float, default=0.9)
+parser.add_argument("--lightgbm_h_subsample_freq",       type=int,   default=1)
+parser.add_argument("--lightgbm_h_reg_alpha",            type=float, default=0.0)
+parser.add_argument("--lightgbm_h_reg_lambda",           type=float, default=1.0)
+parser.add_argument("--lightgbm_h_alpha",                type=float, default=2000.0)
+
+# ----- CatBoost --------------------------------------------------------------
+parser.add_argument("--catboost_g_iterations",           type=int,   default=500)
+parser.add_argument("--catboost_g_learning_rate",        type=float, default=0.05)
+parser.add_argument("--catboost_g_depth",                type=int,   default=7)
+parser.add_argument("--catboost_g_l2_leaf_reg",          type=float, default=10.0)
+parser.add_argument("--catboost_g_bagging_temperature",  type=float, default=0.5)
+parser.add_argument("--catboost_g_loss_function",        type=str,   default="Huber:delta=2000")
+parser.add_argument("--catboost_g_subsample",            type=float, default=0.9)
+parser.add_argument("--catboost_g_rsm",                  type=float, default=0.9)
+
+parser.add_argument("--catboost_h_iterations",           type=int,   default=500)
+parser.add_argument("--catboost_h_learning_rate",        type=float, default=0.05)
+parser.add_argument("--catboost_h_depth",                type=int,   default=7)
+parser.add_argument("--catboost_h_l2_leaf_reg",          type=float, default=10.0)
+parser.add_argument("--catboost_h_bagging_temperature",  type=float, default=0.5)
+parser.add_argument("--catboost_h_loss_function",        type=str,   default="Huber:delta=2000")
+parser.add_argument("--catboost_h_subsample",            type=float, default=0.9)
+parser.add_argument("--catboost_h_rsm",                  type=float, default=0.9)
 
 # ----- MLP (PyTorch) --------------------------------------------------------
 # hidden_layer_sizes is a comma-separated string, e.g. "128,64"
@@ -443,7 +501,38 @@ def _apply_config_override(namespace):
     for key, value in override_payload.items():
         if key == "config_override":
             continue
-        setattr(namespace, key, value)
+
+        if hasattr(namespace, key):
+            current_value = getattr(namespace, key)
+            converted_value = value
+
+            if current_value is not None:
+                target_type = type(current_value)
+                try:
+                    if target_type is bool:
+                        if isinstance(value, str):
+                            converted_value = str2bool(value)
+                        else:
+                            converted_value = bool(value)
+                    elif target_type is int and not isinstance(current_value, bool):
+                        converted_value = int(value)
+                    elif target_type is float:
+                        converted_value = float(value)
+                    elif target_type is tuple and isinstance(value, list):
+                        converted_value = tuple(value)
+                    elif target_type is list and isinstance(value, tuple):
+                        converted_value = list(value)
+                except (ValueError, TypeError, argparse.ArgumentTypeError):
+                    logger.warning(
+                        "Config override %s=%r could not be cast to %s; using raw value.",
+                        key,
+                        value,
+                        target_type.__name__,
+                    )
+
+            setattr(namespace, key, converted_value)
+        else:
+            setattr(namespace, key, value)
 
     logger.info("Applied config overrides from %s", override_path)
 

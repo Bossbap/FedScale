@@ -1,0 +1,21 @@
+f0 - f11 are the dynamic signals. For each group, we collect the five last values of the associated dynamic signal and handcraft values. The first value is mean (the mean of these five signal-values), the second value is std (the std of these five signal-values), the third value is slope (the slope coeeficient of a linear interpolation on these five values) and the fourth value is last (the last of the five signal-values):
+ - f0-f3 are rate signals
+ - f4-f7 are availability signals
+ - f8-f11 are batteryLevel signals
+f12-f14 are the static signals:
+ - f12 is the cpu_flops
+ - f13 is the gpu_flops
+ - f14 is the peak_throughput
+f15 is the derived categorical has_gpu feature
+f16 is the cluster_rank feature
+f17 is the round index
+
+For h, we add
+f18 is n_participations
+f19 is ema_u the exponential average of utilities of the client
+f20 is std_u the standard deviation of collected utilities
+f21 is time_since_last the difference since the current round and the round at which the last client was selected
+f22 is success_rate the proportion of successes of that client
+f23 is ema_norm_u the exponential average of normalized utilities across the associated round of the client
+f24 is std_norm_u the normalized standard deviation of normalized collected utilities
+f25 is last_raw_u the last utility collected

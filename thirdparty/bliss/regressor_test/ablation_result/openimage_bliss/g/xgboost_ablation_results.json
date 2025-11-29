@@ -1,0 +1,270 @@
+[
+  {
+    "subset_name": "full",
+    "dropped_features": [],
+    "n_features_used": 18,
+    "mean_round_rmse": 0.3096976216251161
+  },
+  {
+    "subset_name": "full_minus_cluster_rank",
+    "dropped_features": [
+      "f16"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3108038448269925
+  },
+  {
+    "subset_name": "full_minus_has_gpu",
+    "dropped_features": [
+      "f15"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3096976216251161
+  },
+  {
+    "subset_name": "full_minus_round_index",
+    "dropped_features": [
+      "f17"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.34589970023043803
+  },
+  {
+    "subset_name": "full_minus_rate_summaries",
+    "dropped_features": [
+      "f0",
+      "f1",
+      "f2",
+      "f3"
+    ],
+    "n_features_used": 14,
+    "mean_round_rmse": 0.36449785504252474
+  },
+  {
+    "subset_name": "full_minus_availability_summaries",
+    "dropped_features": [
+      "f4",
+      "f5",
+      "f6",
+      "f7"
+    ],
+    "n_features_used": 14,
+    "mean_round_rmse": 0.31001075522194105
+  },
+  {
+    "subset_name": "full_minus_battery_summaries",
+    "dropped_features": [
+      "f8",
+      "f9",
+      "f10",
+      "f11"
+    ],
+    "n_features_used": 14,
+    "mean_round_rmse": 0.31849998358805676
+  },
+  {
+    "subset_name": "full_minus_all_dynamic_summaries",
+    "dropped_features": [
+      "f0",
+      "f1",
+      "f2",
+      "f3",
+      "f4",
+      "f5",
+      "f6",
+      "f7",
+      "f8",
+      "f9",
+      "f10",
+      "f11"
+    ],
+    "n_features_used": 6,
+    "mean_round_rmse": 0.633849539173824
+  },
+  {
+    "subset_name": "full_minus_static_system",
+    "dropped_features": [
+      "f12",
+      "f13",
+      "f14"
+    ],
+    "n_features_used": 15,
+    "mean_round_rmse": 0.31403246916762717
+  },
+  {
+    "subset_name": "full_minus_rate_mean",
+    "dropped_features": [
+      "f0"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3123592656205597
+  },
+  {
+    "subset_name": "full_minus_rate_std",
+    "dropped_features": [
+      "f1"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.312995588629588
+  },
+  {
+    "subset_name": "full_minus_rate_slope",
+    "dropped_features": [
+      "f2"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.30903824436672694
+  },
+  {
+    "subset_name": "full_minus_rate_last",
+    "dropped_features": [
+      "f3"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.308626845254221
+  },
+  {
+    "subset_name": "full_minus_rate_mean_last",
+    "dropped_features": [
+      "f0",
+      "f3"
+    ],
+    "n_features_used": 16,
+    "mean_round_rmse": 0.3229458291463647
+  },
+  {
+    "subset_name": "full_minus_availability_mean",
+    "dropped_features": [
+      "f4"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.30556749086226
+  },
+  {
+    "subset_name": "full_minus_availability_std",
+    "dropped_features": [
+      "f5"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3083162583839352
+  },
+  {
+    "subset_name": "full_minus_availability_slope",
+    "dropped_features": [
+      "f6"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3033436529590437
+  },
+  {
+    "subset_name": "full_minus_availability_last",
+    "dropped_features": [
+      "f7"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.30403582288221076
+  },
+  {
+    "subset_name": "full_minus_availability_mean_last",
+    "dropped_features": [
+      "f4",
+      "f7"
+    ],
+    "n_features_used": 16,
+    "mean_round_rmse": 0.3164375191698004
+  },
+  {
+    "subset_name": "full_minus_battery_mean",
+    "dropped_features": [
+      "f8"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.30840930126354077
+  },
+  {
+    "subset_name": "full_minus_battery_std",
+    "dropped_features": [
+      "f9"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3087857840901638
+  },
+  {
+    "subset_name": "full_minus_battery_slope",
+    "dropped_features": [
+      "f10"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.3081274247723048
+  },
+  {
+    "subset_name": "full_minus_battery_last",
+    "dropped_features": [
+      "f11"
+    ],
+    "n_features_used": 17,
+    "mean_round_rmse": 0.30675579196623043
+  },
+  {
+    "subset_name": "full_minus_battery_mean_last",
+    "dropped_features": [
+      "f8",
+      "f11"
+    ],
+    "n_features_used": 16,
+    "mean_round_rmse": 0.3150046219428041
+  },
+  {
+    "subset_name": "full_minus_all_means",
+    "dropped_features": [
+      "f0",
+      "f4",
+      "f8"
+    ],
+    "n_features_used": 15,
+    "mean_round_rmse": 0.31330637055896593
+  },
+  {
+    "subset_name": "full_minus_all_stds",
+    "dropped_features": [
+      "f1",
+      "f5",
+      "f9"
+    ],
+    "n_features_used": 15,
+    "mean_round_rmse": 0.31612545487268034
+  },
+  {
+    "subset_name": "full_minus_all_slopes",
+    "dropped_features": [
+      "f2",
+      "f6",
+      "f10"
+    ],
+    "n_features_used": 15,
+    "mean_round_rmse": 0.30456002340129873
+  },
+  {
+    "subset_name": "full_minus_all_lasts",
+    "dropped_features": [
+      "f3",
+      "f7",
+      "f11"
+    ],
+    "n_features_used": 15,
+    "mean_round_rmse": 0.3085416393953886
+  },
+  {
+    "subset_name": "full_minus_all_mean_last",
+    "dropped_features": [
+      "f0",
+      "f3",
+      "f4",
+      "f7",
+      "f8",
+      "f11"
+    ],
+    "n_features_used": 12,
+    "mean_round_rmse": 0.34930141048473085
+  }
+]

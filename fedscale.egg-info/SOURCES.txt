@@ -244,7 +244,9 @@ thirdparty/__init__.py
 thirdparty/bliss/__init__.py
 thirdparty/bliss/bliss.py
 thirdparty/bliss/encode.py
+thirdparty/bliss/encode2.py
 thirdparty/bliss/regressor.py
+thirdparty/bliss/regressor2.py
 thirdparty/oort/__init__.py
 thirdparty/oort/oort.py
 thirdparty/oort/utils/__init__.py

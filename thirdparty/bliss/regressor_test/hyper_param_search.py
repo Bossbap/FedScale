@@ -3,7 +3,7 @@
 Grid-search hyper-parameters for Bliss regressors (sequential, global CV).
 
 Usage example:
-  python hyper_param_search.py \
+  python thirdparty/bliss/hyper_param_search.py \
       --data_dir thirdparty/bliss/regressor_test/datasets/femnist \
       --model xgboost --regressor g \
       --n_jobs 1 --cv_splits 2 \
@@ -283,25 +283,14 @@ def main() -> None:
         grid = {
             "n_estimators":      [200],
             "learning_rate":     [0.04, 0.1],
-            "max_depth":         [3, 5, 8],
-            "subsample":         [0.7, 1.0],
-            "colsample_bytree":  [0.7, 1.0],
-            "min_child_weight":  [1, 5],
-            "reg_alpha":         [0.1],
-            "reg_lambda":        [1.0, 10.0],
-            "huber_slope":       [500, 2000],
+            "max_depth":         [3, 5, 8, 10],
+            "subsample":         [0.7, 0.9, 1.0],
+            "colsample_bytree":  [0.7, 0.9, 1.0],
+            "min_child_weight":  [1, 3, 6],
+            "reg_alpha":         [0, 0.1, 1],
+            "reg_lambda":        [0.0, 3.0, 10.0],
+            "huber_slope":       [1000, 2000, 3000],
         }
-        # grid = {
-        #     "n_estimators":      [200],
-        #     "learning_rate":     [0.1, 0.3],
-        #     "max_depth":         [7, 8, 10],
-        #     "subsample":         [0.85, 1.0],
-        #     "colsample_bytree":  [0.8, 0.9, 1.0],
-        #     "min_child_weight":  [1, 3],
-        #     "reg_alpha":         [0.1],
-        #     "reg_lambda":        [1.0, 5.0],
-        #     "huber_slope":       [1500, 2000, 3000],
-        # }
         cfgs_full = [{**base_gpu, **g} for g in ParameterGrid(grid)]
 
     elif model == "lightgbm":
@@ -311,60 +300,29 @@ def main() -> None:
             n_estimators=200,
             verbosity=-1,
         )
-        # grid = {
-        #     "num_leaves":        [31, 63, 127],
-        #     "learning_rate":     [0.03, 0.1],
-        #     "min_child_samples": [10, 20],
-        #     "colsample_bytree":  [0.7, 1.0],
-        #     "subsample":         [0.7, 1.0],
-        #     "subsample_freq":    [1],
-        #     "reg_alpha":         [0.0, 0.005],
-        #     "reg_lambda":        [0, 5],
-        #     "alpha":             [500, 2000],  # Huber delta
-        # }
-        # grid = { #2 for h
-        #     "num_leaves":        [93, 127, 165],
-        #     "learning_rate":     [0.1, 0.2, 0.5],
-        #     "min_child_samples": [15, 20, 30],
-        #     "colsample_bytree":  [0.9, 1.0],
-        #     "subsample":         [0.9, 1.0],
-        #     "subsample_freq":    [1, 5],
-        #     "reg_alpha":         [0.0],
-        #     "reg_lambda":        [2, 5, 10],
-        #     "alpha":             [1500, 2000, 3000],  # Huber delta
-        # }
-        # grid = { #2 for g
-        #     "num_leaves":        [93, 127, 165],
-        #     "learning_rate":     [0.1, 0.2, 0.5],
-        #     "min_child_samples": [5, 10, 15],
-        #     "colsample_bytree":  [0.9, 1.0],
-        #     "subsample":         [0.9, 1.0],
-        #     "subsample_freq":    [1, 5],
-        #     "reg_alpha":         [0.0],
-        #     "reg_lambda":        [0, 2],
-        #     "alpha":             [1500, 2000, 3000],  # Huber delta
-        # }
-        grid = { #3 for h
-            "num_leaves":        [165, 195, 225],
-            "learning_rate":     [0.1],
-            "min_child_samples": [20],
-            "colsample_bytree":  [0.9, 0.95],
-            "subsample":         [1.0],
+        grid = {
+            "num_leaves":        [31, 63, 127, 161],
+            "learning_rate":     [0.02, 0.05, 0.1],
+            "min_child_samples": [3, 8, 15],
+            "colsample_bytree":  [0.7, 0.9, 1.0],
+            "subsample":         [0.7, 0.9, 1.0],
             "subsample_freq":    [1],
             "reg_alpha":         [0.0],
-            "reg_lambda":        [2,3,4],
-            "alpha":             [1750, 2000, 2250],  # Huber delta
+            "reg_lambda":        [0.0, 1.0],
+            "alpha":             [1000, 2000, 3000],  # Huber delta
         }
         cfgs_full = [{**base_lgbm, **g} for g in ParameterGrid(grid)]
 
     elif model == "catboost":
         grid = {
-            "iterations":         [300, 600, 1000],
+            "iterations":         [500],
             "learning_rate":      [0.02, 0.05, 0.1],
-            "depth":              [4, 6, 8],
+            "depth":              [3, 7, 10],
             "l2_leaf_reg":        [3, 10, 30],
             "bagging_temperature":[0, 0.5, 1, 2],
-            "loss_function":      [f"Huber:delta={d}" for d in (500, 2000)],
+            "loss_function":      [f"Huber:delta={d}" for d in (1000, 2000, 3000)],
+            "subsample":          [0.7, 1.0],
+            "rsm": [0.7, 0.9, 1.0],
         }
         cfgs_full = list(ParameterGrid(grid))
 
@@ -434,33 +392,25 @@ def main() -> None:
     print(f"Elapsed     : {elapsed/60:.1f} min")
     print("==========================")
 
-    # Persist ranking to both the dataset folder and hp_configs/<job_name>
-    ranking = [{"rmse": s, **c} for s, c in results]
-    out1 = Path(args.data_dir) / f"best_{args.model}_{args.regressor}.json"
-    out2 = save_root / f"best_{args.model}_{args.regressor}.json"
-    for out in (out1, out2):
-        with out.open("w") as f:
-            json.dump(ranking, f, indent=2)
-        logging.info("Full ranking written to %s", out)
+    # Save full ranking (all configs) into a single params file
+    ranking = []
+    for score, cfg in results:
+        # Strip out boilerplate / non-hp keys
+        hp = {
+            k: v for k, v in cfg.items()
+            if k not in {"tree_method", "predictor", "device", "verbosity",
+                         "objective", "eval_metric"}
+        }
+        ranking.append({
+            "rmse": score,
+            "params": hp,
+        })
 
-    # Also store a minimal snippet with the single best config
-    best_snippet = {
-        k: v for k, v in best_cfg.items()
-        if k not in {"tree_method", "predictor", "device", "verbosity",
-                     "objective", "eval_metric"}
-    }
-    best_meta = {
-        "model": args.model,
-        "regressor": args.regressor,
-        "cv_splits": args.cv_splits,
-        "n_jobs": args.n_jobs,
-        "round_stride": args.round_stride,
-        "max_round": args.max_round,
-        "rmse": best_rmse,
-        "params": best_snippet,
-    }
-    with (save_root / f"best_{args.model}_{args.regressor}_params.json").open("w") as f:
-        json.dump(best_meta, f, indent=2)
+    out_params = save_root / f"best_{args.model}_{args.regressor}_params.json"
+    with out_params.open("w") as f:
+        json.dump(ranking, f, indent=2)
+    logging.info("HP configs written to %s", out_params)
+
 
 
 if __name__ == "__main__":

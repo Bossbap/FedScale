@@ -11,6 +11,10 @@ from concurrent import futures
 import logging
 import types
 
+# Avoid noisy gRPC fork warnings when background threads are active.
+os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
+os.environ.setdefault("GRPC_PYTHON_FORK_SUPPORT_ENABLED", "0")
+
 import grpc
 import numpy as np
 import torch

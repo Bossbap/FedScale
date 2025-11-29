@@ -1,0 +1,30 @@
+subset_name,dropped_features,n_features_used,mean_round_rmse
+full_minus_availability_slope,['f6'],17,0.3033436529590437
+full_minus_availability_last,['f7'],17,0.30403582288221076
+full_minus_all_slopes,"['f2', 'f6', 'f10']",15,0.30456002340129873
+full_minus_availability_mean,['f4'],17,0.30556749086226
+full_minus_battery_last,['f11'],17,0.30675579196623043
+full_minus_battery_slope,['f10'],17,0.3081274247723048
+full_minus_availability_std,['f5'],17,0.3083162583839352
+full_minus_battery_mean,['f8'],17,0.30840930126354077
+full_minus_all_lasts,"['f3', 'f7', 'f11']",15,0.3085416393953886
+full_minus_rate_last,['f3'],17,0.308626845254221
+full_minus_battery_std,['f9'],17,0.3087857840901638
+full_minus_rate_slope,['f2'],17,0.30903824436672694
+full,[],18,0.3096976216251161
+full_minus_has_gpu,['f15'],17,0.3096976216251161
+full_minus_availability_summaries,"['f4', 'f5', 'f6', 'f7']",14,0.31001075522194105
+full_minus_cluster_rank,['f16'],17,0.3108038448269925
+full_minus_rate_mean,['f0'],17,0.3123592656205597
+full_minus_rate_std,['f1'],17,0.312995588629588
+full_minus_all_means,"['f0', 'f4', 'f8']",15,0.31330637055896593
+full_minus_static_system,"['f12', 'f13', 'f14']",15,0.31403246916762717
+full_minus_battery_mean_last,"['f8', 'f11']",16,0.3150046219428041
+full_minus_all_stds,"['f1', 'f5', 'f9']",15,0.31612545487268034
+full_minus_availability_mean_last,"['f4', 'f7']",16,0.3164375191698004
+full_minus_battery_summaries,"['f8', 'f9', 'f10', 'f11']",14,0.31849998358805676
+full_minus_rate_mean_last,"['f0', 'f3']",16,0.3229458291463647
+full_minus_round_index,['f17'],17,0.34589970023043803
+full_minus_all_mean_last,"['f0', 'f3', 'f4', 'f7', 'f8', 'f11']",12,0.34930141048473085
+full_minus_rate_summaries,"['f0', 'f1', 'f2', 'f3']",14,0.36449785504252474
+full_minus_all_dynamic_summaries,"['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11']",6,0.633849539173824

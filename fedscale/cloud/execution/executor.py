@@ -8,6 +8,10 @@ from argparse import Namespace
 import csv
 import os
 
+# Avoid gRPC fork warnings when subprocesses/threads are active.
+os.environ.setdefault("GRPC_ENABLE_FORK_SUPPORT", "0")
+os.environ.setdefault("GRPC_PYTHON_FORK_SUPPORT_ENABLED", "0")
+
 import numpy as np
 import torch
 import wandb

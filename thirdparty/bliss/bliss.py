@@ -55,7 +55,11 @@ class _training_selector:
         self.amount_clients_predict_train_set = args.amount_clients_predict_train_set
         self.ema_alpha = args.ema_alpha
         self.utility_ema_alpha = getattr(args, "utility_ema_alpha", 0.7)
-        self.huber_delta = float(getattr(args, "huber_delta", 1000.0))
+        gamma_arg = getattr(args, "recency_weighting_gamma", None)
+        if gamma_arg is None:
+            gamma_arg = getattr(args, "recency_gamma", 1.0)
+        self.recency_gamma = float(gamma_arg)
+        self.sampling_temperature_eta = getattr(args, "sampling_temperature_eta", None)
         self.rng = random.Random(sample_seed)
         np.random.seed(sample_seed)
         self.round = 0
@@ -66,16 +70,13 @@ class _training_selector:
         self.clients_to_predict = []
         self.clients_to_refresh = []
 
-        self.g_model = TreeRegressor(
-            args.g_model,
-            _extract_hyperparams(args, args.g_model, 'g'),
-            self.huber_delta,
-        )
-        self.h_model = TreeRegressor(
-            args.h_model,
-            _extract_hyperparams(args, args.h_model, 'h'),
-            self.huber_delta,
-        )
+        g_hyper = _extract_hyperparams(args, args.g_model, 'g')
+        h_hyper = _extract_hyperparams(args, args.h_model, 'h')
+        self.g_delta = _derive_huber_delta(args.g_model, g_hyper)
+        self.h_delta = _derive_huber_delta(args.h_model, h_hyper)
+
+        self.g_model = TreeRegressor(args.g_model, g_hyper)
+        self.h_model = TreeRegressor(args.h_model, h_hyper)
 
         # Linear regressor weights (g and h)
         self._g_w: np.ndarray | None = None
@@ -86,6 +87,7 @@ class _training_selector:
         self.collect_data = args.collect_data
         self._last_pred_seen: dict[int, float] = {}
         self._last_pred_unseen: dict[int, float] = {}
+        self._round_stats: dict[int, Dict[str, float]] = {}
 
         # ── Pacer hyper‑parameters ─────────────────────────────────────
         self.pacer_step    = args.pacer_step    # how often we inspect
@@ -98,14 +100,30 @@ class _training_selector:
         self.successfulClients:   set[int]   = set()
 
         if self.collect_data:
-            # target folder …/regressor_test/datasets/<job_name>
+            # target folder …/regressor_test/datasets/<job_name>/(train|test)/
             base_dir = (Path(__file__).resolve().parent         #  thirdparty/bliss
                         / "regressor_test" / "datasets" / args.job_name)
-            base_dir.mkdir(parents=True, exist_ok=True)
+            train_dir = base_dir / "train"
+            test_dir = base_dir / "test"
+            train_dir.mkdir(parents=True, exist_ok=True)
+            test_dir.mkdir(parents=True, exist_ok=True)
 
             ts = datetime.now().strftime("%m%d%H%M%S")   # e.g. 0716235849
-            self._g_file = base_dir / f"g_{ts}.csv"
-            self._h_file = base_dir / f"h_{ts}.csv"
+            self._g_file = train_dir / f"g_{ts}.csv"
+            self._h_file = train_dir / f"h_{ts}.csv"
+            self._g_test_file = test_dir / f"g_{ts}.csv"
+            self._h_test_file = test_dir / f"h_{ts}.csv"
+
+            # per-round buffers for realised utilities
+            self._round_selected: dict[int, dict[int, dict[str, Any]]] = {}
+            self._round_expected: dict[int, int] = {}
+            self._flushed_rounds: set[int] = set()
+        else:
+            self._g_test_file = None
+            self._h_test_file = None
+            self._round_selected = {}
+            self._round_expected = {}
+            self._flushed_rounds = set()
 
         logging.info("[Bliss] training selector ready (seed=%d)", sample_seed)
 
@@ -125,7 +143,8 @@ class _training_selector:
             "amount_clients_predict_train_set": self.amount_clients_predict_train_set,
             "ema_alpha": self.ema_alpha,
             "utility_ema_alpha": self.utility_ema_alpha,
-            "huber_delta": self.huber_delta,
+            "recency_gamma": self.recency_gamma,
+            "sampling_temperature_eta": self.sampling_temperature_eta,
             "clients_to_predict": list(self.clients_to_predict),
             "clients_to_refresh": list(self.clients_to_refresh),
             "collect_data": self.collect_data,
@@ -140,6 +159,10 @@ class _training_selector:
             "_last_pred_seen": copy.deepcopy(self._last_pred_seen),
             "_last_pred_unseen": copy.deepcopy(self._last_pred_unseen),
             "_h_tally": getattr(self, "_h_tally", None),
+            "_round_stats": copy.deepcopy(self._round_stats),
+            "_round_selected": copy.deepcopy(getattr(self, "_round_selected", {})),
+            "_round_expected": copy.deepcopy(getattr(self, "_round_expected", {})),
+            "_flushed_rounds": copy.deepcopy(getattr(self, "_flushed_rounds", set())),
         }
 
     def load_state(self, state: Optional[Dict[str, Any]]) -> None:
@@ -170,7 +193,8 @@ class _training_selector:
         )
         self.ema_alpha = state.get("ema_alpha", self.ema_alpha)
         self.utility_ema_alpha = state.get("utility_ema_alpha", self.utility_ema_alpha)
-        self.huber_delta = state.get("huber_delta", self.huber_delta)
+        self.recency_gamma = state.get("recency_gamma", self.recency_gamma)
+        self.sampling_temperature_eta = state.get("sampling_temperature_eta", self.sampling_temperature_eta)
         self.clients_to_predict = list(state.get("clients_to_predict", []))
         self.clients_to_refresh = list(state.get("clients_to_refresh", []))
         self.collect_data = state.get("collect_data", self.collect_data)
@@ -188,6 +212,19 @@ class _training_selector:
         self._last_pred_unseen = copy.deepcopy(state.get("_last_pred_unseen", {}))
         if "_h_tally" in state and state["_h_tally"] is not None:
             self._h_tally = dict(state["_h_tally"])
+        self._round_stats = copy.deepcopy(state.get("_round_stats", {}))
+        self._round_selected = copy.deepcopy(state.get("_round_selected", {}))
+        self._round_expected = copy.deepcopy(state.get("_round_expected", {}))
+        self._flushed_rounds = set(state.get("_flushed_rounds", []))
+        # Refresh cached deltas in case hyper-params changed during load
+        self.g_delta = _derive_huber_delta(
+            getattr(self.args, "g_model", "xgboost"),
+            getattr(self.g_model, "_hyper", {}),
+        )
+        self.h_delta = _derive_huber_delta(
+            getattr(self.args, "h_model", "xgboost"),
+            getattr(self.h_model, "_hyper", {}),
+        )
 
     def register_client(self, client_id: int, feedbacks: Dict[str, Any]):
         """Add a new client to the system (initially considered *unseen*)."""
@@ -219,6 +256,11 @@ class _training_selector:
             'utility_mean': 0.0,
             'utility_M2': 0.0,
             'last_participation_round': None,
+            'norm_utility': 0.0,
+            'utility_norm_ema': 0.0,
+            'utility_norm_mean': 0.0,
+            'utility_norm_M2': 0.0,
+            'last_raw_utility': 0.0,
         }
 
     def update_client_metadata_pre_training(self, feedbacks: Dict[str, Any]):
@@ -248,11 +290,21 @@ class _training_selector:
         if success:
             client['success_count'] += 1
 
+        round_idx = client.get('round', self.round)
+
+        # Update round-level stats then compute normalized utility
+        mean_r, std_r = self._update_round_stats(round_idx, util)
+        norm_util = (util - mean_r) / max(std_r, 1e-6)
+        client['norm_utility'] = norm_util
+
         count = client['participations']
         if count == 1:
             client['utility_ema'] = util
             client['utility_mean'] = util
             client['utility_M2'] = 0.0
+            client['utility_norm_ema'] = norm_util
+            client['utility_norm_mean'] = norm_util
+            client['utility_norm_M2'] = 0.0
         else:
             alpha = float(self.utility_ema_alpha)
             client['utility_ema'] = alpha * util + (1 - alpha) * client['utility_ema']
@@ -261,12 +313,32 @@ class _training_selector:
             delta2 = util - client['utility_mean']
             client['utility_M2'] += delta * delta2
 
-        client['last_participation_round'] = client.get('round', self.round - 1)
+            client['utility_norm_ema'] = alpha * norm_util + (1 - alpha) * client['utility_norm_ema']
+            delta_norm = norm_util - client['utility_norm_mean']
+            client['utility_norm_mean'] += delta_norm / count
+            delta2_norm = norm_util - client['utility_norm_mean']
+            client['utility_norm_M2'] += delta_norm * delta2_norm
 
-    def _mean_huber_loss(self, preds: np.ndarray, target: np.ndarray) -> float:
+        client['last_participation_round'] = client.get('round', self.round - 1)
+        client['last_raw_utility'] = util
+
+        if self.collect_data:
+            selected_round = client.get("round", self.round - 1)
+            round_map = self._round_selected.get(selected_round)
+            if round_map and client_id in round_map:
+                round_map[client_id]["raw_utility"] = util
+                # Flush immediately if we have all expected feedback for the round
+                expected = self._round_expected.get(selected_round, 0)
+                have = sum(
+                    1 for rec in round_map.values() if "raw_utility" in rec
+                )
+                if expected and have >= expected:
+                    self._flush_test_round(selected_round)
+
+    def _mean_huber_loss(self, preds: np.ndarray, target: np.ndarray, delta: float) -> float:
         if preds.size == 0:
             return 0.0
-        delta = float(self.huber_delta)
+        delta = float(delta)
         diff = np.abs(preds - target)
         loss = np.where(
             diff <= delta,
@@ -282,12 +354,21 @@ class _training_selector:
         ema = client.get('utility_ema', 0.0)
         mean = client.get('utility_mean', 0.0)
         m2 = client.get('utility_M2', 0.0)
+        ema_norm = client.get('utility_norm_ema', 0.0)
+        mean_norm = client.get('utility_norm_mean', 0.0)
+        m2_norm = client.get('utility_norm_M2', 0.0)
 
         if count > 1:
             variance = m2 / (count - 1)
             std = math.sqrt(max(variance, 0.0))
         else:
             std = 0.0
+
+        if count > 1:
+            variance_norm = m2_norm / (count - 1)
+            std_norm = math.sqrt(max(variance_norm, 0.0))
+        else:
+            std_norm = 0.0
 
         last_round = client.get('last_participation_round')
         if last_round is None:
@@ -303,7 +384,65 @@ class _training_selector:
             "std_utility": float(std),
             "time_since_last": time_since_last,
             "success_rate": success_rate,
+            "ema_norm_utility": float(ema_norm),
+            "std_norm_utility": float(std_norm),
+            "last_raw_utility": float(client.get('last_raw_utility', 0.0)),
         }
+
+    def _update_round_stats(self, round_idx: int, raw_util: float) -> tuple[float, float]:
+        stats = self._round_stats.get(round_idx, {"count": 0, "mean": 0.0, "M2": 0.0})
+        count = stats["count"] + 1
+        delta = raw_util - stats["mean"]
+        mean = stats["mean"] + delta / count
+        delta2 = raw_util - mean
+        M2 = stats["M2"] + delta * delta2
+        stats.update({"count": count, "mean": mean, "M2": M2})
+        self._round_stats[round_idx] = stats
+        if count > 1:
+            variance = M2 / (count - 1)
+            std = math.sqrt(max(variance, 0.0))
+        else:
+            std = 0.0
+        return mean, std
+
+    def _get_normalised_utility(self, client_id: int) -> float:
+        client = self.clients.get(client_id, {})
+        if "norm_utility" in client:
+            return float(client.get("norm_utility", 0.0))
+        util = float(client.get("utility", 0.0) or 0.0)
+        round_idx = client.get("round", 0)
+        stats = self._round_stats.get(round_idx)
+        if stats:
+            count = stats.get("count", 0)
+            mean = stats.get("mean", 0.0)
+            M2 = stats.get("M2", 0.0)
+            if count > 1:
+                variance = M2 / (count - 1)
+                std = math.sqrt(max(variance, 0.0))
+            else:
+                std = 0.0
+            return (util - mean) / max(std, 1e-6)
+        return util
+
+    def _compute_recency_weights(self, client_ids: list[int]) -> np.ndarray:
+        """Return recency-decayed weights (mean=1) for given clients based on their last round."""
+        if not client_ids:
+            return np.ones(0, dtype=np.float32)
+        current_round = max(self.round - 1, 0)
+        weights = []
+        gamma = float(self.recency_gamma)
+        for cid in client_ids:
+            r_i = self.clients.get(cid, {}).get("round", current_round)
+            delta = max(0.0, float(current_round - r_i))
+            w = math.exp(-gamma * delta)
+            weights.append(w)
+        w_arr = np.asarray(weights, dtype=np.float32)
+        mean = float(np.mean(w_arr))
+        if mean > 0:
+            w_arr /= mean
+        else:
+            w_arr = np.ones_like(w_arr, dtype=np.float32)
+        return w_arr
 
     # ------------------------------------------------------------------
     # Weighted sampling helper
@@ -378,6 +517,10 @@ class _training_selector:
     def select_participant(self, num_of_clients: int) -> List[int]:
         """Return num_of_clients client IDs with the highest predicted utility."""
 
+        if self.collect_data:
+            # Flush realised utilities from the previous round if all feedbacks arrived.
+            self._flush_test_round(self.round - 1)
+
         self._pacer_update()
 
         # ------------------------------------------------------------------
@@ -394,29 +537,33 @@ class _training_selector:
         encoded_train = None
         X_train = np.empty((0, 0), dtype=np.float32)
         y_train = np.array([])
+        y_train_raw = np.array([])
         if train_g_ids:
             train_dicts = [
                 {
                     "client_id": cid,
                     "dynamic_metadata": self.clients[cid]["dynamic_metadata"],
                     "static_metadata": self.clients[cid]["static_metadata"],
+                    "round_index": self.clients[cid].get("round", 0),
                 }
                 for cid in train_g_ids
             ]
             encoded_train = self.encode_g(train_dicts)
             X_train = encoded_train.matrix
-            y_train = np.array([self.clients[cid]["utility"] for cid in train_g_ids])
+            y_train_raw = np.array([self.clients[cid]["utility"] for cid in train_g_ids])
+            y_train = np.array([self._get_normalised_utility(cid) for cid in train_g_ids])
             if X_train.size > 0 and not np.allclose(y_train, 0):
                 self.g_model.fit(
                     X_train,
                     y_train,
                     categorical_idx=encoded_train.categorical_idx,
+                    sample_weight=self._compute_recency_weights(train_g_ids),
                 )
                 util_hat_dbg = self.g_model.predict(
                     X_train,
                     categorical_idx=encoded_train.categorical_idx,
                 )
-                huber_loss = self._mean_huber_loss(util_hat_dbg, y_train)
+                huber_loss = self._mean_huber_loss(util_hat_dbg, y_train, self.g_delta)
                 logging.info("[Bliss] g fitted on %d pts  (HuberLoss %.4f)",
                         len(train_g_ids),
                         huber_loss)
@@ -424,7 +571,7 @@ class _training_selector:
 
         if train_g_ids and self.collect_data and encoded_train is not None:
             self._dump_rows_to_csv(self._g_file, self.round,
-                           encoded_train.ids, X_train, y_train)
+                           encoded_train.ids, X_train, y_train, y_train_raw)
 
 
         # ------------------------------------------------------------------
@@ -439,6 +586,7 @@ class _training_selector:
         encoded_h_train = None
         X_train_r = np.empty((0, 0), dtype=np.float32)
         y_train_r = np.array([])
+        y_train_r_raw = np.array([])
         if train_h_ids:
             enriched: List[Dict[str, Any]] = []
             for cid in train_h_ids:
@@ -449,22 +597,25 @@ class _training_selector:
                         "dynamic_metadata": base["dynamic_metadata"],
                         "static_metadata": base["static_metadata"],
                         "history": self._build_history_features(cid),
+                        "round_index": base.get("round", 0),
                     }
                 )
             encoded_h_train = self.encode_h(enriched)
             X_train_r = encoded_h_train.matrix
-            y_train_r = np.array([self.clients[cid]["utility"] for cid in train_h_ids])
+            y_train_r_raw = np.array([self.clients[cid]["utility"] for cid in train_h_ids])
+            y_train_r = np.array([self._get_normalised_utility(cid) for cid in train_h_ids])
             if X_train_r.size > 0 and not np.allclose(y_train_r, 0):
                 self.h_model.fit(
                     X_train_r,
                     y_train_r,
                     categorical_idx=encoded_h_train.categorical_idx,
+                    sample_weight=self._compute_recency_weights(train_h_ids),
                 )
                 util_hat_dbg = self.h_model.predict(
                     X_train_r,
                     categorical_idx=encoded_h_train.categorical_idx,
                 )
-                huber_loss = self._mean_huber_loss(util_hat_dbg, y_train_r)
+                huber_loss = self._mean_huber_loss(util_hat_dbg, y_train_r, self.h_delta)
                 logging.info("[Bliss] h fitted on %d pts  (HuberLoss %.4f)",
                             len(train_h_ids),
                             huber_loss)
@@ -472,7 +623,7 @@ class _training_selector:
         
         if train_h_ids and self.collect_data and encoded_h_train is not None:
                 self._dump_rows_to_csv(self._h_file, self.round,
-                           encoded_h_train.ids, X_train_r, y_train_r)
+                           encoded_h_train.ids, X_train_r, y_train_r, y_train_r_raw)
 
         # ------------------------------------------------------------------
         # 3 ▸ PREDICT utilities for the online candidates passed via ClientManager
@@ -480,6 +631,11 @@ class _training_selector:
         predictions: List[Tuple[int, float]] = []
         pred_seen_map: dict[int, float] = {}
         pred_unseen_map: dict[int, float] = {}
+
+        # Track encoded feature vectors for picked clients (used for test logging).
+        g_feat_map: dict[int, np.ndarray] = {}
+        h_feat_map: dict[int, np.ndarray] = {}
+        source_map: dict[int, str] = {}
 
         # --- (a) Unseen online clients → g ---------------------------------
         if self.clients_to_predict:
@@ -491,6 +647,7 @@ class _training_selector:
                     {
                         **d,                                   # dynamic metadata already present
                         "static_metadata": self.clients[cid]["static_metadata"],
+                        "round_index": self.round,
                     }
                 )
 
@@ -498,6 +655,9 @@ class _training_selector:
                 encoded_pred = self.encode_g(enriched_predict)
                 X_pred = encoded_pred.matrix
                 ids_pred = encoded_pred.ids
+                for cid, row in zip(ids_pred, X_pred):
+                    g_feat_map[int(cid)] = np.asarray(row, dtype=np.float32)
+                    source_map[int(cid)] = "g"
                 util_hat = self.g_model.predict(
                     X_pred,
                     categorical_idx=encoded_pred.categorical_idx,
@@ -522,12 +682,16 @@ class _training_selector:
                         **d,  # dynamic data already present
                         "static_metadata": base["static_metadata"],
                         "history": self._build_history_features(cid),
+                        "round_index": self.round,
                     }
                 )
             try:
                 encoded_ref = self.encode_h(enriched_refresh)
                 X_ref = encoded_ref.matrix
                 ids_ref = encoded_ref.ids
+                for cid, row in zip(ids_ref, X_ref):
+                    h_feat_map[int(cid)] = np.asarray(row, dtype=np.float32)
+                    source_map[int(cid)] = "h"
                 util_hat_r = self.h_model.predict(
                     X_ref,
                     categorical_idx=encoded_ref.categorical_idx,
@@ -548,8 +712,26 @@ class _training_selector:
             logging.warning("[Bliss] … – fallback to random")
             picked = self.rng.sample(list(self.clients.keys()), k=min(num_of_clients, len(self.clients)))
         else:
-            predictions.sort(key=lambda t: t[1], reverse=True)
-            picked = [cid for cid, _ in predictions[:num_of_clients]]
+            eta = self.sampling_temperature_eta
+            k_sel = min(num_of_clients, len(predictions))
+            if eta is None or eta < 0:
+                predictions.sort(key=lambda t: t[1], reverse=True)
+                picked = [cid for cid, _ in predictions[:k_sel]]
+            else:
+                ids = np.array([cid for cid, _ in predictions], dtype=int)
+                scores = np.array([u for _, u in predictions], dtype=float)
+                if scores.size == 0:
+                    picked = []
+                else:
+                    m = float(np.max(scores))
+                    logits = eta * (scores - m)
+                    weights = np.exp(logits)
+                    probs = weights / np.sum(weights)
+                    if k_sel >= len(ids):
+                        sampled = ids.tolist()
+                    else:
+                        sampled = list(np.random.choice(ids, size=k_sel, replace=False, p=probs))
+                    picked = sampled
 
 
         # Pad if needed (should be rare)
@@ -562,11 +744,28 @@ class _training_selector:
         self.exploitClients = picked
         self._last_pred_seen = pred_seen_map
         self._last_pred_unseen = pred_unseen_map
+        round_idx = self.round
 
         for cid in picked:
             self.clients[cid]["last_round"] = self.clients[cid]["round"]  
             self.clients[cid]["seen"] += 1
             self.clients[cid]["round"] = self.round
+
+        if self.collect_data:
+            selected_map: dict[int, dict[str, Any]] = {}
+            for cid in picked:
+                feat = g_feat_map.get(cid)
+                source = source_map.get(cid)
+                if source == "h":
+                    feat = h_feat_map.get(cid)
+                if feat is None or source is None:
+                    continue
+                selected_map[int(cid)] = {
+                    "source": source,
+                    "features": np.asarray(feat, dtype=np.float32),
+                }
+            self._round_selected[round_idx] = selected_map
+            self._round_expected[round_idx] = len(picked)
 
         self.round += 1
         self.clients_to_predict.clear()
@@ -580,8 +779,8 @@ class _training_selector:
     # ------------------------------------------------------------------
 
     def _dump_rows_to_csv(self, file_path: Path, round_idx: int,
-                          client_ids, X: np.ndarray, y: np.ndarray) -> None:
-        """Append encoded rows + target_utility + round to *file_path*."""
+                          client_ids, X: np.ndarray, y: np.ndarray, raw_y: np.ndarray) -> None:
+        """Append encoded rows + target_utility (normalized) + raw_utility + round to *file_path*."""
         if X.size == 0:        # nothing to write
             return
 
@@ -591,11 +790,84 @@ class _training_selector:
             if header_needed:
                 header = (["round", "client_id"]
                           + [f"f{i}" for i in range(X.shape[1])]
-                          + ["target_utility"])
+                          + ["target_utility", "raw_utility"])
                 w.writerow(header)
 
-            for cid, feats, target in zip(client_ids, X, y):
-                w.writerow([round_idx, cid] + feats.tolist() + [target])
+            for cid, feats, target, raw_target in zip(client_ids, X, y, raw_y):
+                w.writerow([round_idx, cid] + feats.tolist() + [target, raw_target])
+
+    def _round_mean_std(self, round_idx: int) -> tuple[float, float]:
+        stats = self._round_stats.get(round_idx, {})
+        count = stats.get("count", 0)
+        mean = float(stats.get("mean", 0.0))
+        if count > 1:
+            variance = float(stats.get("M2", 0.0)) / max(count - 1, 1)
+            std = math.sqrt(max(variance, 0.0))
+        else:
+            std = 0.0
+        return mean, std
+
+    def _flush_test_round(self, round_idx: int) -> None:
+        """Write realised utilities for a finished round to test CSVs."""
+        if not self.collect_data or round_idx in self._flushed_rounds:
+            return
+        sel_map = self._round_selected.get(round_idx)
+        if not sel_map:
+            return
+
+        mean, std = self._round_mean_std(round_idx)
+        eps = 1e-6
+
+        g_ids: list[int] = []
+        h_ids: list[int] = []
+        g_feats: list[np.ndarray] = []
+        h_feats: list[np.ndarray] = []
+        g_y: list[float] = []
+        h_y: list[float] = []
+        g_raw: list[float] = []
+        h_raw: list[float] = []
+
+        for cid, rec in sel_map.items():
+            if "raw_utility" not in rec:
+                continue
+            raw = float(rec["raw_utility"])
+            y_val = (raw - mean) / max(std, eps)
+            feats = np.asarray(rec.get("features", []), dtype=np.float32)
+            if rec.get("source") == "h":
+                h_ids.append(int(cid))
+                h_feats.append(feats)
+                h_y.append(float(y_val))
+                h_raw.append(raw)
+            else:
+                g_ids.append(int(cid))
+                g_feats.append(feats)
+                g_y.append(float(y_val))
+                g_raw.append(raw)
+
+        wrote_any = False
+        if g_ids and self._g_test_file is not None:
+            self._dump_rows_to_csv(
+                self._g_test_file,
+                round_idx,
+                g_ids,
+                np.stack(g_feats).astype(np.float32),
+                np.asarray(g_y, dtype=np.float32),
+                np.asarray(g_raw, dtype=np.float32),
+            )
+            wrote_any = True
+        if h_ids and self._h_test_file is not None:
+            self._dump_rows_to_csv(
+                self._h_test_file,
+                round_idx,
+                h_ids,
+                np.stack(h_feats).astype(np.float32),
+                np.asarray(h_y, dtype=np.float32),
+                np.asarray(h_raw, dtype=np.float32),
+            )
+            wrote_any = True
+
+        if wrote_any:
+            self._flushed_rounds.add(round_idx)
 
     def calculateSumUtil(self, client_ids: list[int]) -> float:
         """Average utility of *successful* clients in <client_ids>."""
@@ -814,12 +1086,38 @@ def _extract_hyperparams(args, model_name: str, head: str) -> dict:
             hp_key = k[len(prefix):]            # drop the prefix
             # special parsing: "128,64" -> (128, 64)
             if isinstance(v, str) and "," in v and hp_key.endswith("sizes"):
-                v = tuple(v)
+                parts = [p.strip() for p in v.split(",") if p.strip()]
+                parsed: list[int] = []
+                for p in parts:
+                    try:
+                        parsed.append(int(p))
+                    except ValueError:
+                        # fallback to raw string if conversion fails
+                        parsed.append(int(float(p)))
+                v = tuple(parsed)
             # drop unset *bool* flags that remain False
             if isinstance(v, bool) and v is False:
                 continue
             out[hp_key] = v
     return out
+
+
+def _derive_huber_delta(model_name: str, hyper: dict, fallback: float = 2000.0) -> float:
+    """Infer the Huber delta/slope from a hyper-param dict."""
+    name = (model_name or "").lower()
+    try:
+        if name == "xgboost":
+            return float(hyper.get("huber_slope", fallback))
+        if name == "lightgbm":
+            return float(hyper.get("alpha", fallback))
+        if name == "catboost":
+            lf = hyper.get("loss_function")
+            if isinstance(lf, str) and "delta=" in lf:
+                return float(lf.split("delta=", 1)[1])
+            return float(hyper.get("delta", fallback))
+    except Exception:
+        return float(fallback)
+    return float(fallback)
 
 # -----------------------------------------------------------------------------
 # Testing selector – shape compatible with Oort.  *Mostly placeholder*

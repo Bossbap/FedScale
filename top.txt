@@ -1,0 +1,68 @@
+Departements
+ssh -t baptiste.geisenberger@129.104.254.32 top
+ssh -t baptiste.geisenberger@129.104.254.33 top
+ssh -t baptiste.geisenberger@129.104.254.34 top
+ssh -t baptiste.geisenberger@129.104.254.35 top
+ssh -t baptiste.geisenberger@129.104.254.36 top
+ssh -t baptiste.geisenberger@129.104.254.37 top
+ssh -t baptiste.geisenberger@129.104.254.38 top
+ssh -t baptiste.geisenberger@129.104.254.39 top
+ssh -t baptiste.geisenberger@129.104.254.40 top
+ssh -t baptiste.geisenberger@129.104.254.42 top
+ssh -t baptiste.geisenberger@129.104.254.43 top
+ssh -t baptiste.geisenberger@129.104.254.44 top
+ssh -t baptiste.geisenberger@129.104.254.45 top
+ssh -t baptiste.geisenberger@129.104.254.46 top
+ssh -t baptiste.geisenberger@129.104.254.47 top
+ssh -t baptiste.geisenberger@129.104.254.48 top
+ssh -t baptiste.geisenberger@129.104.254.49 top
+ssh -t baptiste.geisenberger@129.104.254.50 top
+ssh -t baptiste.geisenberger@129.104.254.51 top
+ssh -t baptiste.geisenberger@129.104.254.52 top
+ssh -t baptiste.geisenberger@129.104.254.53 top
+ssh -t baptiste.geisenberger@129.104.254.54 top
+ssh -t baptiste.geisenberger@129.104.254.55 top
+
+
+Birds
+ssh -t baptiste.geisenberger@129.104.253.32 top
+ssh -t baptiste.geisenberger@129.104.253.33 top
+ssh -t baptiste.geisenberger@129.104.253.34 top
+ssh -t baptiste.geisenberger@129.104.253.35 top
+ssh -t baptiste.geisenberger@129.104.253.36 top
+ssh -t baptiste.geisenberger@129.104.253.37 top
+ssh -t baptiste.geisenberger@129.104.253.38 top
+ssh -t baptiste.geisenberger@129.104.253.41 top
+ssh -t baptiste.geisenberger@129.104.253.40 top
+ssh -t baptiste.geisenberger@129.104.253.42 top
+ssh -t baptiste.geisenberger@129.104.253.43 top
+ssh -t baptiste.geisenberger@129.104.253.44 top
+ssh -t baptiste.geisenberger@129.104.253.45 top
+ssh -t baptiste.geisenberger@129.104.253.46 top
+ssh -t baptiste.geisenberger@129.104.253.47 top
+ssh -t baptiste.geisenberger@129.104.253.48 top
+ssh -t baptiste.geisenberger@129.104.253.49 top
+ssh -t baptiste.geisenberger@129.104.253.50 top
+ssh -t baptiste.geisenberger@129.104.253.51 top
+
+
+Bones
+ssh -t baptiste.geisenberger@129.104.252.32 top
+ssh -t baptiste.geisenberger@129.104.252.34 top
+ssh -t baptiste.geisenberger@129.104.252.37 top
+ssh -t baptiste.geisenberger@129.104.252.38 top
+ssh -t baptiste.geisenberger@129.104.252.39 top
+ssh -t baptiste.geisenberger@129.104.252.41 top
+ssh -t baptiste.geisenberger@129.104.252.42 top
+ssh -t baptiste.geisenberger@129.104.252.43 top
+ssh -t baptiste.geisenberger@129.104.252.44 top
+ssh -t baptiste.geisenberger@129.104.252.45 top
+ssh -t baptiste.geisenberger@129.104.252.47 top
+ssh -t baptiste.geisenberger@129.104.252.49 top
+ssh -t baptiste.geisenberger@129.104.252.50 top
+ssh -t baptiste.geisenberger@129.104.252.53 top
+ssh -t baptiste.geisenberger@129.104.252.54 top
+ssh -t baptiste.geisenberger@129.104.252.56 top
+
+
+

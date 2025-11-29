@@ -13,6 +13,7 @@ _TRACE_TIME_AXIS = np.arange(5, dtype=np.float32)
 NUM_DYNAMIC_FEATURES = len(TRACE_KEYS) * len(TRACE_FEATURE_SUFFIXES)  # 12
 STATIC_NUMERIC_FEATURES = 3  # cpu_flops, gpu_flops, peak_throughput
 NUM_CATEGORICAL_FEATURES = 2  # has_gpu, cluster_rank
+ROUND_FEATURES = 1
 
 CAT_FEATURE_IDX: Tuple[int, int] = (
     NUM_DYNAMIC_FEATURES + STATIC_NUMERIC_FEATURES,
@@ -103,7 +104,8 @@ def encode_g(records: List[Dict[str, Any]]) -> EncodedBatch:
         dynamic = _dynamic_features(rec.get("dynamic_metadata", {}))
         static = _static_numeric_features(rec.get("static_metadata", {}))
         categorical = _categorical_features(rec.get("static_metadata", {}))
-        combined = np.concatenate([dynamic, static, categorical]).astype(np.float32)
+        round_idx = float(rec.get("round_index", rec.get("round", 0.0)) or 0.0)
+        combined = np.concatenate([dynamic, static, categorical, np.asarray([round_idx], dtype=np.float32)]).astype(np.float32)
         rows.append(combined)
         ids.append(int(rec["client_id"]))
 
@@ -125,6 +127,9 @@ def encode_h(records: List[Dict[str, Any]]) -> EncodedBatch:
         std_u = float(history.get("std_utility", 0.0) or 0.0)
         time_since_last = float(history.get("time_since_last", 0.0) or 0.0)
         success_rate = float(history.get("success_rate", 0.0) or 0.0)
+        ema_norm_u = float(history.get("ema_norm_utility", 0.0) or 0.0)
+        std_norm_u = float(history.get("std_norm_utility", 0.0) or 0.0)
+        last_raw_u = float(history.get("last_raw_utility", 0.0) or 0.0)
         history_rows.append(
             [
                 n_participations,
@@ -132,6 +137,9 @@ def encode_h(records: List[Dict[str, Any]]) -> EncodedBatch:
                 std_u,
                 time_since_last,
                 success_rate,
+                ema_norm_u,
+                std_norm_u,
+                last_raw_u,
             ]
         )
 

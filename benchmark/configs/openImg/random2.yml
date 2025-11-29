@@ -1,0 +1,71 @@
+# Configuration file of FAR training experiment
+
+# ========== Cluster configuration ========== 
+# ip address of the parameter server (need 1 GPU process)
+ps_ip: 129.104.254.40
+
+# ip address of each worker:# of available gpus process on each gpu in this node
+# Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
+# E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
+worker_ips:
+    - 129.104.254.33:[4]
+    - 129.104.254.34:[4]
+    - 129.104.254.35:[4]
+    - 129.104.254.36:[4]
+    - 129.104.254.37:[4]
+    - 129.104.254.38:[4]
+    - 129.104.254.39:[4]
+    - 129.104.254.40:[3]
+
+exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
+
+# Entry function of executor and aggregator under $exp_path
+executor_entry: execution/executor.py
+
+aggregator_entry: aggregation/aggregator.py
+
+auth:
+    ssh_user: "baptiste.geisenberger"
+    ssh_private_key: "/users/eleves-a/2024/baptiste.geisenberger/.ssh/id_rsa"
+
+# cmd to run before we can indeed run FAR (in order)
+setup_commands:
+    - source /Data/baptiste.geisenberger/miniconda3/bin/activate fedscale
+
+# ========== Additional job configuration ========== 
+# Default parameters are specified in config_parser.py, wherein more description of the parameter can be found
+
+job_conf:
+    - job_name: openimage_random2
+    - num_classes: 596
+    - task: cv
+    - log_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark
+    - data_set: openImg
+    - data_dir: /Data/baptiste.geisenberger/Data/openImg
+    - data_map_file: /Data/baptiste.geisenberger/Data/openImg/client_data_mapping/train.csv
+    - clients_file: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/dataset/data/clients.pkl
+    - use_cuda: True
+    - num_loaders: 2
+    - clock_factor: 30
+    - checkpoint_interval: 70
+    # - resume_from: "/users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/logs/openimage/ /checkpoints"
+
+    - collect_data: True
+
+    - model: shufflenet_v2_x2_0
+    - openimg_size: 256
+    - gradient_policy: fed-prox
+    - proxy_mu: 0.001
+
+    - num_participants: 100
+    - eval_interval: 5
+    - rounds: 500
+    - local_steps: 20
+    - batch_size: 20
+    - filter_less: 20
+    - learning_rate: 0.04
+    - decay_factor: 0.98
+    - decay_round: 10
+    - weight_decay: 4e-5
+    - test_bsz: 20
+    - overcommitment: 1.3

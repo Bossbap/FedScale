@@ -67,13 +67,15 @@ job_conf:
     - overcommitment: 1.1
 
     - sample_mode: bliss
-    - number_clients_to_refresh_utility: 500
-    - number_clients_to_predict_utility: 500
-    - amount_clients_predict_train_set: 1000
-    - amount_clients_refresh_train_set: 1500
-    - ema_alpha: 0.9
     - adaptive_training: True
     - run_phase_2: False
+
+    - ema_alpha: 0.9
+    - huber_delta: 2000
+    - utility_ema_alpha: 0.6
+    - recency_weighting_gamma: 0.015
+    - sampling_temperature_eta: 1.5
+
     - t_budget: 275
     - pacer_step: 20
     - pacer_delta: 10
