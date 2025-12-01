@@ -130,6 +130,15 @@ def encode_h(records: List[Dict[str, Any]]) -> EncodedBatch:
         ema_norm_u = float(history.get("ema_norm_utility", 0.0) or 0.0)
         std_norm_u = float(history.get("std_norm_utility", 0.0) or 0.0)
         last_raw_u = float(history.get("last_raw_utility", 0.0) or 0.0)
+        hist_rate_ema = float(history.get("historic_rate_mean_ema", 0.0) or 0.0)
+        hist_avail_ema = float(history.get("historic_availability_mean_ema", 0.0) or 0.0)
+        hist_batt_ema = float(history.get("historic_battery_mean_ema", 0.0) or 0.0)
+        delta_rate = float(history.get("delta_rate_mean", 0.0) or 0.0)
+        delta_avail = float(history.get("delta_availability_mean", 0.0) or 0.0)
+        delta_batt = float(history.get("delta_battery_mean", 0.0) or 0.0)
+        ratio_rate = float(history.get("ratio_rate_mean", 0.0) or 0.0)
+        ratio_avail = float(history.get("ratio_availability_mean", 0.0) or 0.0)
+        ratio_batt = float(history.get("ratio_battery_mean", 0.0) or 0.0)
         history_rows.append(
             [
                 n_participations,
@@ -140,6 +149,15 @@ def encode_h(records: List[Dict[str, Any]]) -> EncodedBatch:
                 ema_norm_u,
                 std_norm_u,
                 last_raw_u,
+                hist_rate_ema,
+                hist_avail_ema,
+                hist_batt_ema,
+                delta_rate,
+                delta_avail,
+                delta_batt,
+                ratio_rate,
+                ratio_avail,
+                ratio_batt,
             ]
         )
 

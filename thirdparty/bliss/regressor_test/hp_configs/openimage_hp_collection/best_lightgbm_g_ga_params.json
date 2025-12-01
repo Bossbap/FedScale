@@ -1,0 +1,239 @@
+{
+  "model": "lightgbm",
+  "regressor": "g",
+  "top_k": 100,
+  "round_stride": 3,
+  "max_round": 400,
+  "random_state": 42,
+  "meta": {
+    "num_rounds_used": 133,
+    "num_configs_evaluated": 10,
+    "ga": {
+      "population_size": 2,
+      "generations": 2,
+      "n_jobs": 1
+    }
+  },
+  "best": {
+    "score": 1.0000000209873325,
+    "params": {
+      "recency_gamma": 0.0008305780179879474,
+      "num_leaves": 189,
+      "learning_rate": 0.024730957836075276,
+      "min_child_samples": 12,
+      "colsample_bytree": 0.747274315930312,
+      "subsample": 0.8589572355568729,
+      "subsample_freq": 1,
+      "reg_lambda": 0.0031067094429384676,
+      "alpha": 1004
+    }
+  },
+  "top_configs": [
+    {
+      "rank": 1,
+      "score": 1.0000000209873325,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.747274315930312,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 1,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 2,
+      "score": 1.0000000063067054,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.747274315930312,
+        "subsample": 0.6111082656291588,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 3,
+      "score": 0.9999999984120279,
+      "params": {
+        "recency_gamma": 7.772226736675197e-06,
+        "num_leaves": 224,
+        "learning_rate": 0.05511988026624484,
+        "min_child_samples": 41,
+        "colsample_bytree": 0.8412737979694124,
+        "subsample": 0.6323151146944785,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0038437767833990064,
+        "alpha": 1133
+      }
+    },
+    {
+      "rank": 4,
+      "score": 0.999999947807034,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.9800964967787884,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 5,
+      "score": 0.999999947807034,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.9800964967787884,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 916
+      }
+    },
+    {
+      "rank": 6,
+      "score": 0.9999998790136241,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.747274315930312,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 7,
+      "score": 0.9999998790136241,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.747274315930312,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 8,
+      "score": 0.9999998501403641,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.09319186349942762,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.9800964967787884,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 9,
+      "score": 0.9999998260592156,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.9800964967787884,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 1,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    },
+    {
+      "rank": 10,
+      "score": 0.9999998259364139,
+      "params": {
+        "recency_gamma": 0.0008305780179879474,
+        "num_leaves": 189,
+        "learning_rate": 0.024730957836075276,
+        "min_child_samples": 12,
+        "colsample_bytree": 0.9199026265993958,
+        "subsample": 0.8589572355568729,
+        "subsample_freq": 5,
+        "reg_lambda": 0.0031067094429384676,
+        "alpha": 1004
+      }
+    }
+  ],
+  "summary_stats_top30": {
+    "recency_gamma": {
+      "mean": 0.0007482974388628202,
+      "std": 0.00024684173737538165,
+      "min": 7.772226736675197e-06,
+      "max": 0.0008305780179879474
+    },
+    "num_leaves": {
+      "mean": 192.5,
+      "std": 10.5,
+      "min": 189.0,
+      "max": 224.0
+    },
+    "learning_rate": {
+      "mean": 0.03461594064542746,
+      "std": 0.021524993285251936,
+      "min": 0.024730957836075276,
+      "max": 0.09319186349942762
+    },
+    "min_child_samples": {
+      "mean": 14.9,
+      "std": 8.7,
+      "min": 12.0,
+      "max": 41.0
+    },
+    "colsample_bytree": {
+      "mean": 0.867065967540521,
+      "std": 0.10581148798369043,
+      "min": 0.747274315930312,
+      "max": 0.9800964967787884
+    },
+    "subsample": {
+      "mean": 0.8115081264778621,
+      "std": 0.0950166213455911,
+      "min": 0.6111082656291588,
+      "max": 0.8589572355568729
+    },
+    "subsample_freq": {
+      "mean": 4.2,
+      "std": 1.6,
+      "min": 1.0,
+      "max": 5.0
+    },
+    "reg_lambda": {
+      "mean": 0.0031804161769845214,
+      "std": 0.0002211202021381616,
+      "min": 0.0031067094429384676,
+      "max": 0.0038437767833990064
+    },
+    "alpha": {
+      "mean": 1008.1,
+      "std": 49.210669574798516,
+      "min": 916.0,
+      "max": 1133.0
+    }
+  }
+}

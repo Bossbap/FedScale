@@ -2,20 +2,21 @@
 
 # ========== Cluster configuration ========== 
 # ip address of the parameter server (need 1 GPU process)
-ps_ip: 129.104.252.34
+ps_ip: 129.104.254.42
 
 # ip address of each worker:# of available gpus process on each gpu in this node
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips:
-    - 129.104.252.34:[4]
-    - 129.104.252.38:[4]
-    - 129.104.252.39:[4]
-    - 129.104.252.43:[4]
-    - 129.104.252.45:[4]
-    - 129.104.252.49:[4]
-    - 129.104.252.53:[4]
-    - 129.104.252.54:[4]
+    - 129.104.254.38:[4]
+    - 129.104.254.39:[4]
+    - 129.104.254.42:[3]
+    - 129.104.254.43:[4]
+    - 129.104.254.44:[4]
+    - 129.104.254.46:[4]
+    - 129.104.254.47:[4]
+    - 129.104.254.50:[4]
+    - 129.104.254.51:[4]
 
 exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
 
@@ -47,7 +48,7 @@ job_conf:
     - use_cuda: True
     - num_loaders: 2
     - clock_factor: 30
-    - checkpoint_interval: 30
+    # - checkpoint_interval: 30
     # - resume_from: "/users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark/logs/openimage_bliss/1029_005821/checkpoints"
     - collect_data: True
 
@@ -75,7 +76,11 @@ job_conf:
     - ema_alpha: 0.9
     - utility_ema_alpha: 0.6
     - recency_weighting_gamma: 0.015
+
+    # FOR RANDOM:
     - sampling_temperature_eta: 0
+    - number_clients_to_predict_utility: 1000000
+    - number_clients_to_refresh_utility: 1000000
 
     - t_budget: 120
     - pacer_step: 20

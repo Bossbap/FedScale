@@ -1344,6 +1344,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
 
         # Advance wall-clock & bump round number
         self.global_virtual_clock += self.round_duration
+        completed_round = int(self.round)
         self.round += 1
 
         # self.log_control_state("rc.on-entry")
@@ -1356,7 +1357,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
             self.client_manager.register_feedback(
                 client_id,
                 last_round_avg_util,
-                time_stamp=self.round,
+                time_stamp=completed_round,
                 duration=self.virtual_client_clock[client_id],
                 success=False,
             )
@@ -1364,7 +1365,7 @@ class Aggregator(job_api_pb2_grpc.JobServiceServicer):
         # Log loss / training stats
         avg_loss = sum(self.loss_accumulator) / max(1, len(self.loss_accumulator))
 
-        prev_round = int(self.round)
+        prev_round = completed_round
         clock_end = float(self.global_virtual_clock)
         duration = float(self.round_duration)
         clock_start = float(clock_end - duration)

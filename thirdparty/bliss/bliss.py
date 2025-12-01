@@ -27,7 +27,12 @@ import sys, pathlib
 repo_root = pathlib.Path(__file__).resolve().parents[2]   # adjust depth if needed
 sys.path.append(str(repo_root))
 
-from thirdparty.bliss.encode2 import EncodedBatch, encode_g as _encode_g_batch, encode_h as _encode_h_batch
+from thirdparty.bliss.encode2 import (
+    EncodedBatch,
+    encode_g as _encode_g_batch,
+    encode_h as _encode_h_batch,
+    CAT_FEATURE_IDX,
+)
 from thirdparty.bliss.regressor2 import TreeRegressor
 
 # -----------------------------------------------------------------------------
@@ -93,6 +98,7 @@ class _training_selector:
         self.pacer_step    = args.pacer_step    # how often we inspect
         self.pacer_delta   = args.pacer_delta   # ΔT when we adapt
         self.t_budget      = args.t_budget      # current preferred time
+        self._log_round    = 0                  # last round id exposed in pacer/logs
 
         # ── Book‑keeping for pacer ─────────────────────────────────────
         self.exploitUtilHistory: list[float] = []   # ΣU over time‑windows
@@ -121,9 +127,10 @@ class _training_selector:
         else:
             self._g_test_file = None
             self._h_test_file = None
-            self._round_selected = {}
-            self._round_expected = {}
-            self._flushed_rounds = set()
+        self._round_selected = {}
+        self._round_expected = {}
+        self._flushed_rounds = set()
+        self._h_samples: dict[int, dict[str, Any]] = {}
 
         logging.info("[Bliss] training selector ready (seed=%d)", sample_seed)
 
@@ -163,6 +170,8 @@ class _training_selector:
             "_round_selected": copy.deepcopy(getattr(self, "_round_selected", {})),
             "_round_expected": copy.deepcopy(getattr(self, "_round_expected", {})),
             "_flushed_rounds": copy.deepcopy(getattr(self, "_flushed_rounds", set())),
+            "_log_round": int(getattr(self, "_log_round", self.round)),
+            "_h_samples": copy.deepcopy(getattr(self, "_h_samples", {})),
         }
 
     def load_state(self, state: Optional[Dict[str, Any]]) -> None:
@@ -216,6 +225,8 @@ class _training_selector:
         self._round_selected = copy.deepcopy(state.get("_round_selected", {}))
         self._round_expected = copy.deepcopy(state.get("_round_expected", {}))
         self._flushed_rounds = set(state.get("_flushed_rounds", []))
+        self._log_round = int(state.get("_log_round", getattr(self, "_log_round", 0)))
+        self._h_samples = copy.deepcopy(state.get("_h_samples", {}))
         # Refresh cached deltas in case hyper-params changed during load
         self.g_delta = _derive_huber_delta(
             getattr(self.args, "g_model", "xgboost"),
@@ -261,6 +272,11 @@ class _training_selector:
             'utility_norm_mean': 0.0,
             'utility_norm_M2': 0.0,
             'last_raw_utility': 0.0,
+            'dyn_mean_ema': {
+                'rate': None,
+                'availability': None,
+                'battery': None,
+            },
         }
 
     def update_client_metadata_pre_training(self, feedbacks: Dict[str, Any]):
@@ -290,7 +306,8 @@ class _training_selector:
         if success:
             client['success_count'] += 1
 
-        round_idx = client.get('round', self.round)
+        round_idx = feedbacks.get("round", client.get('round', self.round))
+        client['round'] = round_idx
 
         # Update round-level stats then compute normalized utility
         mean_r, std_r = self._update_round_stats(round_idx, util)
@@ -319,8 +336,63 @@ class _training_selector:
             delta2_norm = norm_util - client['utility_norm_mean']
             client['utility_norm_M2'] += delta_norm * delta2_norm
 
-        client['last_participation_round'] = client.get('round', self.round - 1)
+        client['last_participation_round'] = round_idx
         client['last_raw_utility'] = util
+
+        # Update dynamic mean EMA and store for history features
+        cur_means = self._current_dynamic_means(client.get("dynamic_metadata", {}))
+        dyn_ema = client.get("dyn_mean_ema", {"rate": None, "availability": None, "battery": None})
+        alpha = float(self.utility_ema_alpha)
+        for key in ("rate", "availability", "battery"):
+            prev = dyn_ema.get(key)
+            if prev is None:
+                dyn_ema[key] = cur_means[key]
+            else:
+                dyn_ema[key] = alpha * cur_means[key] + (1 - alpha) * prev
+        client["dyn_mean_ema"] = dyn_ema
+        client["last_dynamic_means"] = cur_means
+
+        # Capture first-participation sample for g (cold-start) only once
+        if "g_first_sample" not in client:
+            rec = {
+                "client_id": client_id,
+                "dynamic_metadata": client["dynamic_metadata"],
+                "static_metadata": client["static_metadata"],
+                "round_index": round_idx,
+            }
+            try:
+                enc = self.encode_g([rec])
+                if enc.matrix.size > 0:
+                    client["g_first_sample"] = {
+                        "features": np.asarray(enc.matrix[0], dtype=np.float32),
+                        "norm_utility": float(norm_util),
+                        "raw_utility": float(util),
+                        "round": int(round_idx),
+                    }
+            except Exception:
+                logging.exception("[Bliss] failed to record first-sample for g")
+
+        # Update per-client h sample (one row per client) once we have at least 2 participations
+        if client.get("participations", 0) >= 2:
+            hist = self._build_history_features(client_id, cur_means)
+            rec_h = {
+                "client_id": client_id,
+                "dynamic_metadata": client["dynamic_metadata"],
+                "static_metadata": client["static_metadata"],
+                "history": hist,
+                "round_index": round_idx,
+            }
+            try:
+                enc_h = self.encode_h([rec_h])
+                if enc_h.matrix.size > 0:
+                    self._h_samples[client_id] = {
+                        "features": np.asarray(enc_h.matrix[0], dtype=np.float32),
+                        "norm_utility": float(norm_util),
+                        "raw_utility": float(util),
+                        "round": int(round_idx),
+                    }
+            except Exception:
+                logging.exception("[Bliss] failed to update h sample")
 
         if self.collect_data:
             selected_round = client.get("round", self.round - 1)
@@ -347,7 +419,7 @@ class _training_selector:
         )
         return float(np.mean(loss))
 
-    def _build_history_features(self, client_id: int) -> Dict[str, float]:
+    def _build_history_features(self, client_id: int, current_means: Optional[Dict[str, float]] = None) -> Dict[str, float]:
         client = self.clients[client_id]
         count = client.get('participations', 0)
         successes = client.get('success_count', 0)
@@ -378,6 +450,25 @@ class _training_selector:
 
         success_rate = float(successes / count) if count > 0 else 0.0
 
+        cur_means = current_means or client.get("last_dynamic_means", {}) or self._current_dynamic_means(client.get("dynamic_metadata", {}))
+        dyn_ema = client.get("dyn_mean_ema", {})
+        eps = 1e-6
+        hist_rate = float(dyn_ema.get("rate", cur_means.get("rate", 0.0)) or 0.0)
+        hist_avail = float(dyn_ema.get("availability", cur_means.get("availability", 0.0)) or 0.0)
+        hist_batt = float(dyn_ema.get("battery", cur_means.get("battery", 0.0)) or 0.0)
+
+        delta_rate = float(cur_means.get("rate", 0.0) - hist_rate)
+        delta_avail = float(cur_means.get("availability", 0.0) - hist_avail)
+        delta_batt = float(cur_means.get("battery", 0.0) - hist_batt)
+
+        ratio_rate = float(cur_means.get("rate", 0.0)) / max(hist_rate + eps, eps)
+        ratio_avail = float(cur_means.get("availability", 0.0)) / max(hist_avail + eps, eps)
+        ratio_batt = float(cur_means.get("battery", 0.0)) / max(hist_batt + eps, eps)
+
+        ratio_rate = min(ratio_rate, 1e6)
+        ratio_avail = min(ratio_avail, 1e6)
+        ratio_batt = min(ratio_batt, 1e6)
+
         return {
             "n_participations": float(count),
             "ema_utility": float(ema),
@@ -387,6 +478,15 @@ class _training_selector:
             "ema_norm_utility": float(ema_norm),
             "std_norm_utility": float(std_norm),
             "last_raw_utility": float(client.get('last_raw_utility', 0.0)),
+            "historic_rate_mean_ema": hist_rate,
+            "historic_availability_mean_ema": hist_avail,
+            "historic_battery_mean_ema": hist_batt,
+            "delta_rate_mean": delta_rate,
+            "delta_availability_mean": delta_avail,
+            "delta_battery_mean": delta_batt,
+            "ratio_rate_mean": ratio_rate,
+            "ratio_availability_mean": ratio_avail,
+            "ratio_battery_mean": ratio_batt,
         }
 
     def _update_round_stats(self, round_idx: int, raw_util: float) -> tuple[float, float]:
@@ -443,6 +543,42 @@ class _training_selector:
         else:
             w_arr = np.ones_like(w_arr, dtype=np.float32)
         return w_arr
+
+    def _compute_recency_weights_from_rounds(self, rounds: list[int]) -> np.ndarray:
+        if not rounds:
+            return np.ones(0, dtype=np.float32)
+        current_round = max(self.round - 1, 0)
+        gamma = float(self.recency_gamma)
+        weights = [math.exp(-gamma * max(0.0, float(current_round - r))) for r in rounds]
+        w_arr = np.asarray(weights, dtype=np.float32)
+        mean = float(np.mean(w_arr))
+        if mean > 0:
+            w_arr /= mean
+        else:
+            w_arr = np.ones_like(w_arr, dtype=np.float32)
+        return w_arr
+
+    def _current_dynamic_means(self, dynamic_metadata: dict) -> dict[str, float]:
+        def _ensure_length(arr, length: int = 5) -> np.ndarray:
+            vec = np.asarray(arr, dtype=np.float32).reshape(-1)
+            if vec.size == 0:
+                return np.zeros(length, dtype=np.float32)
+            if vec.size == length:
+                return vec
+            if vec.size > length:
+                return vec[-length:]
+            pad = np.repeat(vec[-1], length - vec.size)
+            return np.concatenate([vec, pad]).astype(np.float32)
+
+        def _mean_of_last5(vals) -> float:
+            vec = _ensure_length(vals, 5)
+            return float(np.mean(vec))
+
+        return {
+            "rate": _mean_of_last5(dynamic_metadata.get("rates", [])),
+            "availability": _mean_of_last5(dynamic_metadata.get("availabilities", [])),
+            "battery": _mean_of_last5(dynamic_metadata.get("batteryLevels", [])),
+        }
 
     # ------------------------------------------------------------------
     # Weighted sampling helper
@@ -528,102 +664,111 @@ class _training_selector:
         #     Training data: any client we have *already* seen at least once.
         # ------------------------------------------------------------------
 
-        seen_once_ids = [cid for cid, info in self.clients.items() if info["seen"] > 0]
-        train_g_ids = self._weighted_sample(
-            seen_once_ids,
-            min(self.amount_clients_predict_train_set, len(seen_once_ids)),
-        )
+        g_samples = [
+            (cid, info.get("g_first_sample"))
+            for cid, info in self.clients.items()
+            if info.get("g_first_sample") is not None
+        ]
+        if self.amount_clients_predict_train_set > 0:
+            g_samples = g_samples[: self.amount_clients_predict_train_set]
 
         encoded_train = None
         X_train = np.empty((0, 0), dtype=np.float32)
         y_train = np.array([])
         y_train_raw = np.array([])
-        if train_g_ids:
-            train_dicts = [
-                {
-                    "client_id": cid,
-                    "dynamic_metadata": self.clients[cid]["dynamic_metadata"],
-                    "static_metadata": self.clients[cid]["static_metadata"],
-                    "round_index": self.clients[cid].get("round", 0),
-                }
-                for cid in train_g_ids
-            ]
-            encoded_train = self.encode_g(train_dicts)
-            X_train = encoded_train.matrix
-            y_train_raw = np.array([self.clients[cid]["utility"] for cid in train_g_ids])
-            y_train = np.array([self._get_normalised_utility(cid) for cid in train_g_ids])
+        if g_samples:
+            ids = []
+            feats = []
+            y_list = []
+            y_raw_list = []
+            rounds_for_w = []
+            for cid, sample in g_samples:
+                ids.append(int(cid))
+                feats.append(np.asarray(sample["features"], dtype=np.float32))
+                y_list.append(float(sample["norm_utility"]))
+                y_raw_list.append(float(sample["raw_utility"]))
+                rounds_for_w.append(int(sample.get("round", 0)))
+            X_train = np.stack(feats).astype(np.float32)
+            y_train = np.asarray(y_list, dtype=np.float32)
+            y_train_raw = np.asarray(y_raw_list, dtype=np.float32)
             if X_train.size > 0 and not np.allclose(y_train, 0):
                 self.g_model.fit(
                     X_train,
                     y_train,
-                    categorical_idx=encoded_train.categorical_idx,
-                    sample_weight=self._compute_recency_weights(train_g_ids),
+                    categorical_idx=CAT_FEATURE_IDX,
+                    sample_weight=self._compute_recency_weights_from_rounds(rounds_for_w),
                 )
                 util_hat_dbg = self.g_model.predict(
                     X_train,
-                    categorical_idx=encoded_train.categorical_idx,
+                    categorical_idx=CAT_FEATURE_IDX,
                 )
                 huber_loss = self._mean_huber_loss(util_hat_dbg, y_train, self.g_delta)
                 logging.info("[Bliss] g fitted on %d pts  (HuberLoss %.4f)",
-                        len(train_g_ids),
+                        len(ids),
                         huber_loss)
-                self._sample_debug_points(train_dicts, X_train, util_hat_dbg, tag="g-train")
+                self._sample_debug_points(
+                    [
+                        {
+                            "client_id": cid,
+                            "round_index": rounds_for_w[i],
+                        }
+                        for i, cid in enumerate(ids)
+                    ],
+                    X_train,
+                    util_hat_dbg,
+                    tag="g-train",
+                )
 
-        if train_g_ids and self.collect_data and encoded_train is not None:
+        if g_samples and self.collect_data and X_train.size > 0:
             self._dump_rows_to_csv(self._g_file, self.round,
-                           encoded_train.ids, X_train, y_train, y_train_raw)
+                           ids, X_train, y_train, y_train_raw)
 
 
         # ------------------------------------------------------------------
-        # 2 ▸ TRAIN **h**.  Need at least 2 observations / client.
+        # 2 ▸ TRAIN **h**.  One sample per returning client, updated over time.
         # ------------------------------------------------------------------
-        seen_twice_ids = [cid for cid, info in self.clients.items() if info["seen"] > 1]
-        train_h_ids = self._weighted_sample(
-            seen_twice_ids,
-            min(self.amount_clients_refresh_train_set, len(seen_twice_ids)),
-        )
+        h_entries = list(self._h_samples.items())
+        if self.amount_clients_refresh_train_set > 0:
+            h_entries = h_entries[: self.amount_clients_refresh_train_set]
 
-        encoded_h_train = None
         X_train_r = np.empty((0, 0), dtype=np.float32)
         y_train_r = np.array([])
         y_train_r_raw = np.array([])
-        if train_h_ids:
-            enriched: List[Dict[str, Any]] = []
-            for cid in train_h_ids:
-                base = self.clients[cid]
-                enriched.append(
-                    {
-                        "client_id": cid,
-                        "dynamic_metadata": base["dynamic_metadata"],
-                        "static_metadata": base["static_metadata"],
-                        "history": self._build_history_features(cid),
-                        "round_index": base.get("round", 0),
-                    }
-                )
-            encoded_h_train = self.encode_h(enriched)
-            X_train_r = encoded_h_train.matrix
-            y_train_r_raw = np.array([self.clients[cid]["utility"] for cid in train_h_ids])
-            y_train_r = np.array([self._get_normalised_utility(cid) for cid in train_h_ids])
+        h_ids: list[int] = []
+        rounds_h: list[int] = []
+        if h_entries:
+            h_ids = [cid for cid, _ in h_entries]
+            feats = [np.asarray(sample["features"], dtype=np.float32) for _, sample in h_entries]
+            y_train_r = np.asarray([sample["norm_utility"] for _, sample in h_entries], dtype=np.float32)
+            y_train_r_raw = np.asarray([sample["raw_utility"] for _, sample in h_entries], dtype=np.float32)
+            rounds_h = [int(sample.get("round", 0)) for _, sample in h_entries]
+            X_train_r = np.stack(feats).astype(np.float32) if feats else np.empty((0, 0), dtype=np.float32)
+
             if X_train_r.size > 0 and not np.allclose(y_train_r, 0):
                 self.h_model.fit(
                     X_train_r,
                     y_train_r,
-                    categorical_idx=encoded_h_train.categorical_idx,
-                    sample_weight=self._compute_recency_weights(train_h_ids),
+                    categorical_idx=CAT_FEATURE_IDX,
+                    sample_weight=self._compute_recency_weights_from_rounds(rounds_h),
                 )
                 util_hat_dbg = self.h_model.predict(
                     X_train_r,
-                    categorical_idx=encoded_h_train.categorical_idx,
+                    categorical_idx=CAT_FEATURE_IDX,
                 )
                 huber_loss = self._mean_huber_loss(util_hat_dbg, y_train_r, self.h_delta)
                 logging.info("[Bliss] h fitted on %d pts  (HuberLoss %.4f)",
-                            len(train_h_ids),
+                            len(h_ids),
                             huber_loss)
-                self._sample_debug_points(enriched, X_train_r, util_hat_dbg, tag="h-train")
+                self._sample_debug_points(
+                    [{"client_id": cid, "round_index": rounds_h[i]} for i, cid in enumerate(h_ids)],
+                    X_train_r,
+                    util_hat_dbg,
+                    tag="h-train",
+                )
         
-        if train_h_ids and self.collect_data and encoded_h_train is not None:
+        if h_entries and self.collect_data and X_train_r.size > 0:
                 self._dump_rows_to_csv(self._h_file, self.round,
-                           encoded_h_train.ids, X_train_r, y_train_r, y_train_r_raw)
+                           h_ids, X_train_r, y_train_r, y_train_r_raw)
 
         # ------------------------------------------------------------------
         # 3 ▸ PREDICT utilities for the online candidates passed via ClientManager
@@ -745,6 +890,7 @@ class _training_selector:
         self._last_pred_seen = pred_seen_map
         self._last_pred_unseen = pred_unseen_map
         round_idx = self.round
+        self._log_round = round_idx  # expose this round to pacer/logging
 
         for cid in picked:
             self.clients[cid]["last_round"] = self.clients[cid]["round"]  
@@ -921,7 +1067,8 @@ class _training_selector:
     def get_pacer_state(self):
         return {
             "algo": "bliss",
-            "round": int(self.round),
+            # expose the last scheduled round (selector increments internally after selection)
+            "round": int(max(self._log_round, self.round - 1)),
             "t_budget": float(self.t_budget),
             "pacer_step": int(self.pacer_step),
             "pacer_delta": float(self.pacer_delta),

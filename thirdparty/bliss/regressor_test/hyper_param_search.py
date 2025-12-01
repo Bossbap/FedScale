@@ -4,7 +4,7 @@ Grid-search hyper-parameters for Bliss regressors (sequential, global CV).
 
 Usage example:
   python thirdparty/bliss/hyper_param_search.py \
-      --data_dir thirdparty/bliss/regressor_test/datasets/femnist \
+      --data_dir thirdparty/bliss/regressor_test/datasets/openimage_hp_collection \
       --model xgboost --regressor g \
       --n_jobs 1 --cv_splits 2 \
       --round_stride 2 --max_round 400

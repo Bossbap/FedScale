@@ -8,12 +8,15 @@ ps_ip: 129.104.254.42
 # Note that if we collocate ps and worker on same GPU, then we need to decrease this number of available processes on that GPU by 1
 # E.g., master node has 4 available processes, then 1 for the ps, and worker should be set to: worker:3
 worker_ips:
-    - 129.104.254.46:[1]
-    - 129.104.254.48:[1]
-    - 129.104.254.50:[1]
-    # - 129.104.254.51:[1]
-    - 129.104.254.53:[1]
-    - 129.104.254.54:[1]
+    - 129.104.254.38:[4]
+    - 129.104.254.39:[4]
+    - 129.104.254.42:[3]
+    - 129.104.254.43:[4]
+    - 129.104.254.44:[4]
+    - 129.104.254.46:[4]
+    - 129.104.254.47:[4]
+    - 129.104.254.50:[4]
+    - 129.104.254.51:[4]
 
 exp_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/fedscale/cloud
 
@@ -34,7 +37,7 @@ setup_commands:
 # Default parameters are specified in config_parser.py, wherein more description of the parameter can be found
 
 job_conf:
-    - job_name: stackoverflow_bliss
+    - job_name: stackoverflow_hp_collection
     - task: nlp
     - log_path: /users/eleves-a/2024/baptiste.geisenberger/FedScale/benchmark
     - data_set: blog

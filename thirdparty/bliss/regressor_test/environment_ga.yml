@@ -1,0 +1,24 @@
+name: hp_ga
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Core
+  - python=3.10
+  - pip
+  - numpy=1.25
+  - pandas=2.2
+  - scikit-learn=1.4
+
+  # Gradient-boosting libs
+  - xgboost
+  - lightgbm
+  - catboost
+
+  # Utils
+  - tqdm
+
+  # GA hyperparameter search (no TensorFlow dependency)
+  - pip:
+      - sklearn-genetic-opt

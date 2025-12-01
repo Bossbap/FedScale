@@ -320,7 +320,8 @@ class ClientManager:
 
             feedbacks = {
                 'reward': stored_reward,
-                'success': success
+                'success': success,
+                'round': time_stamp,
             }
             self.bliss_sampler.update_client_metadata_post_training(client_id, feedbacks)
 
